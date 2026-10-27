@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SpareLink</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: enterprise shell. Graphite sidebar, search bar, dense work area, right-side record drawer. */
+:root{
+  --bg:#f4f4f4; --surface:#ffffff; --sunk:#eeeeee; --line:#e2e3e3; --line2:#d0d1d2;
+  --fg:#171a20; --muted:#5c5e62; --side:#000000; --side-fg:#a2a3a5; --side-hi:#ffffff;
+  --accent:#3e6ae1; --accent-soft:#e9eefc; --brand:#e82127;
+  --good:#12805c; --good-soft:#e2f2ea; --warn:#a15c07; --warn-soft:#fbf0dd; --bad:#d01c22; --bad-soft:#fde7e7; --info:#393c41; --info-soft:#e8e8e9;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b0b0c; --surface:#171a20; --sunk:#222429; --line:#2e3036; --line2:#3c3f46;
+  --fg:#f4f4f4; --muted:#a2a3a5; --side:#000000; --side-fg:#8e8f91; --side-hi:#ffffff;
+  --accent:#5b82ec; --accent-soft:#1e2742; --brand:#e82127;
+  --good:#4cc38a; --good-soft:#12291f; --warn:#f0b35a; --warn-soft:#33250f; --bad:#ff5a5f; --bad-soft:#3a1517; --info:#d0d1d2; --info-soft:#2a2c31; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b0b0c; --surface:#171a20; --sunk:#222429; --line:#2e3036; --line2:#3c3f46;
+  --fg:#f4f4f4; --muted:#a2a3a5; --side:#000000; --side-fg:#8e8f91; --side-hi:#ffffff;
+  --accent:#5b82ec; --accent-soft:#1e2742; --brand:#e82127;
+  --good:#4cc38a; --good-soft:#12291f; --warn:#f0b35a; --warn-soft:#33250f; --bad:#ff5a5f; --bad-soft:#3a1517; --info:#d0d1d2; --info-soft:#2a2c31; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:13.5px;line-height:1.45}
+button,select,input,textarea{font:inherit;color:inherit}
+.app{display:grid;grid-template-columns:216px 1fr;min-height:100%}
+aside.side{background:var(--side);color:var(--side-fg);padding-block:14px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:12px;display:flex;flex-direction:column;gap:16px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{display:flex;align-items:center;gap:9px;padding:2px 6px}
+.brand .mark{width:26px;height:26px;border-radius:6px;background:var(--brand);display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;font-family:var(--mono)}
+.brand b{color:var(--side-hi);font-size:15px;letter-spacing:.01em}
+.brand small{display:block;font-size:10.5px;color:var(--side-fg);letter-spacing:.04em}
+.navgrp{display:grid;gap:2px}
+.navgrp .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;padding:0 8px 4px;opacity:.7}
+.navgrp a{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;text-decoration:none;color:var(--side-fg);font-weight:500}
+.navgrp a:hover{background:rgba(255,255,255,.06);color:var(--side-hi)}
+.navgrp a[aria-current="page"]{background:rgba(255,255,255,.08);color:var(--side-hi);box-shadow:inset 3px 0 0 var(--brand)}
+.navgrp a svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.7}
+.navgrp a .cnt{margin-left:auto;font-family:var(--mono);font-size:11px;background:#3c3f46;color:#fff;padding:0 6px;border-radius:9px}
+.navgrp a .cnt.red{background:#e82127;color:#fff}
+.side .foot{margin-top:auto;font-size:11px;opacity:.75;padding:0 8px;line-height:1.4}
+.main{min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;height:52px;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:inset 0 2px 0 var(--brand);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));position:sticky;top:0;z-index:4}
+.crumbs{font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.crumbs span{color:var(--muted);font-weight:400}
+.cmd{flex:1;max-width:360px;margin-left:auto;display:flex;align-items:center;gap:8px;background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:5px 10px;color:var(--muted);min-width:0}
+.cmd input{border:0;background:transparent;outline:0;width:100%;min-width:0;font-size:13px}
+.env{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:4px;background:var(--info-soft);color:var(--info);white-space:nowrap}
+.avatar{width:28px;height:28px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:600;font-size:11.5px;flex:none;border:0;cursor:pointer}
+.content{padding-block:18px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px;align-content:start}
+.pagehead{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pagehead h1{margin:0;font-size:20px;font-weight:600}
+.pagehead .sub{color:var(--muted);font-size:12.5px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line2);background:var(--surface);border-radius:6px;padding:6px 12px;font-weight:500;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+:root[data-theme="dark"] .btn.pri,:root[data-theme="dark"] .btn.ok{color:#0e1318}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn.pri,:root:not([data-theme="light"]) .btn.ok{color:#0e1318}}
+.btn.ok{background:var(--good);border-color:var(--good);color:#fff}
+.btn.sm{padding:3px 9px;font-size:12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,tr:focus-visible,button:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-width:0}
+.card > .hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.card > .hd h2{margin:0;font-size:13.5px;font-weight:600}
+.card > .bd{padding:14px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:11px 14px;text-align:left}
+button.tile{cursor:pointer}
+button.tile:hover{border-color:var(--accent)}
+.tile .k{font-size:11.5px;color:var(--muted);font-weight:500}
+.tile .v{font-family:var(--mono);font-size:22px;font-weight:500;font-variant-numeric:tabular-nums;margin-top:2px}
+.tile .d{font-size:11.5px;font-family:var(--mono)}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.g21{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px}
+@media (max-width:1000px){.g21{grid-template-columns:1fr}}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{padding:7px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;background:var(--sunk)}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.m{font-family:var(--mono);font-size:12.5px}
+td.wrap{white-space:normal;min-width:220px}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover td{background:var(--sunk)}
+tr.dim td{color:var(--muted)}
+tr.selrow td{background:var(--accent-soft)}
+td a{color:var(--accent)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.p-good{background:var(--good-soft);color:var(--good)} .p-warn{background:var(--warn-soft);color:var(--warn)} .p-bad{background:var(--bad-soft);color:var(--bad)} .p-info{background:var(--info-soft);color:var(--info)} .p-acc{background:var(--accent-soft);color:var(--accent)} .p-mut{background:var(--sunk);color:var(--muted)}
+.chip{font-family:var(--mono);font-size:10.5px;padding:1px 6px;border-radius:4px;background:var(--sunk);color:var(--muted);border:1px solid var(--line);white-space:nowrap}
+.chip.pim{background:var(--info-soft);color:var(--info);border-color:transparent}
+.chip.dam{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.up{color:var(--bad)} .down{color:var(--good)}
+.mut{color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.filters label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.sel{border:1px solid var(--line2);background:var(--surface);border-radius:6px;padding:5px 8px;font-size:13px}
+.seg{display:inline-flex;gap:4px;flex-wrap:wrap}
+.seg button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 11px;cursor:pointer;font-size:12.5px}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--surface);border-color:var(--fg)}
+.seg button[aria-pressed="true"] .mut{color:inherit;opacity:.7}
+.scrim{position:fixed;inset:0;background:rgba(10,14,18,.35);z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(880px,100%);background:var(--bg);z-index:21;display:flex;flex-direction:column;border-left:1px solid var(--line);box-shadow:-12px 0 30px rgba(0,0,0,.12)}
+.drawer .dh{background:var(--surface);border-bottom:1px solid var(--line);padding-left:18px;padding-right:max(18px,env(safe-area-inset-right,0px));padding-top:calc(14px + env(safe-area-inset-top,0px))}
+.drawer .dh.pb{padding-bottom:14px}
+.drawer .dh .row{display:flex;align-items:flex-start;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.drawer .dh h2{margin:0;font-size:18px;font-weight:600}
+.drawer .dh .meta{color:var(--muted);font-size:12.5px;margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.drawer .db{overflow-y:auto;padding-top:16px;padding-left:18px;padding-right:max(18px,env(safe-area-inset-right,0px));padding-bottom:calc(24px + env(safe-area-inset-bottom,0px));display:grid;gap:14px;align-content:start}
+.tabs{display:flex;gap:2px;margin-top:10px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:8px 10px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.tabs button .c{font-family:var(--mono);font-size:10.5px;margin-left:4px;padding:0 5px;border-radius:8px;background:var(--bad-soft);color:var(--bad)}
+.x{border:0;background:var(--sunk);width:30px;height:30px;border-radius:6px;cursor:pointer;font-size:16px;flex:none}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 18px}
+.f .k{font-size:11px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.f .v{font-weight:500;margin-top:2px}
+.f .v.m{font-family:var(--mono);font-size:12.5px}
+.f .v.miss{color:var(--bad)}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.form label{display:grid;gap:4px;font-size:11.5px;color:var(--muted);font-weight:500}
+.form label.wide{grid-column:1/-1}
+.form input,.form select,.form textarea{border:1px solid var(--line2);background:var(--surface);border-radius:6px;padding:6px 8px;width:100%;font-size:13px;color:var(--fg)}
+.form input:disabled,.form select:disabled,.form textarea:disabled{background:var(--sunk);color:var(--muted)}
+.form textarea{min-height:58px;resize:vertical}
+.form .req::after{content:" *";color:var(--bad)}
+.form input.bad,.form select.bad,.form textarea.bad{border-color:var(--bad);background:var(--bad-soft)}
+.checks{display:flex;gap:12px;flex-wrap:wrap}
+.checks label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg)}
+.checks input{width:15px;height:15px;accent-color:var(--accent)}
+.meter{height:6px;border-radius:3px;background:var(--sunk);overflow:hidden;min-width:40px}
+.meter i{display:block;height:100%;background:var(--good)}
+.meter.w i{background:var(--warn)} .meter.b i{background:var(--bad)}
+.chmini{display:grid;grid-template-columns:repeat(4,40px);gap:6px}
+.chmini .meter{min-width:0}
+.issue{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:start;padding:9px 14px;border-bottom:1px solid var(--line)}
+.issue:last-child{border-bottom:0}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{display:grid;grid-template-columns:110px 14px 1fr;gap:8px;font-size:12.5px;padding:5px 0}
+.timeline li .dot{width:8px;height:8px;border-radius:50%;background:var(--line2);margin-top:5px}
+.timeline li.ok .dot{background:var(--good)} .timeline li.warn .dot{background:var(--warn)} .timeline li.bad .dot{background:var(--bad)} .timeline li.acc .dot{background:var(--accent)}
+.timeline li .ts{font-family:var(--mono);color:var(--muted);font-size:11.5px}
+/* DAM */
+.agrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.acard{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden;cursor:pointer;text-align:left;padding:0;display:flex;flex-direction:column;width:100%}
+.acard:hover{border-color:var(--accent)}
+.acard .meta{padding:8px 10px;display:grid;gap:3px;font-size:12px;min-width:0}
+.acard .meta b{font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acard .meta .fn{font-family:var(--mono);font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb{aspect-ratio:4/3;background:var(--sunk);display:grid;place-items:center;position:relative;border-bottom:1px solid var(--line);max-width:100%;width:100%}
+.thumb svg{width:46%;height:auto;stroke:var(--muted);fill:none;stroke-width:1.4}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.thumb .fmt{position:absolute;left:8px;top:8px;font-family:var(--mono);font-size:10px;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:0 5px;color:var(--muted)}
+.thumb.t-hero{background:linear-gradient(140deg,var(--accent-soft),var(--sunk))}
+.thumb.t-exploded{background:linear-gradient(140deg,var(--info-soft),var(--sunk))}
+.thumb.t-sds{background:linear-gradient(140deg,var(--warn-soft),var(--sunk))}
+.mini{display:flex;gap:10px;flex-wrap:wrap}
+.mini > div{width:150px}
+.drop{border:1.5px dashed var(--line2);border-radius:8px;padding:14px;text-align:center;color:var(--muted);background:var(--surface)}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+/* pipeline */
+.pipe{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.pipe .st{padding:8px 8px 7px;border-radius:6px;background:var(--sunk);font-size:11.5px;min-width:0;color:var(--muted)}
+.pipe .st b{display:block;font-size:12px;color:var(--fg)}
+.pipe .st.done{background:var(--good-soft);color:var(--good)}
+.pipe .st.now{background:var(--warn-soft);color:var(--warn);box-shadow:inset 0 0 0 1px var(--warn)}
+@media (max-width:760px){.pipe{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* charts */
+.chart text{fill:var(--muted);font-family:var(--mono);font-size:10px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;margin-top:8px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend span::before{content:"";width:9px;height:9px;border-radius:2px;background:var(--c)}
+.hbar{display:grid;grid-template-columns:minmax(110px,1.1fr) 3fr 44px;gap:10px;align-items:center;padding:6px 4px;border-radius:5px;cursor:pointer;border:0;background:none;width:100%;text-align:left}
+.hbar:hover{background:var(--sunk)}
+.hbar .bar{height:12px;background:var(--sunk);border-radius:3px;overflow:hidden}
+.hbar .bar i{display:block;height:100%;border-radius:3px}
+.hbar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.sect{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;margin-top:12px}
+.arch text{font-family:var(--sans);font-size:12px;fill:var(--fg)}
+.arch .sm{font-size:10.5px;fill:var(--muted);font-family:var(--mono)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--surface);padding:9px 16px;border-radius:8px;font-weight:500;z-index:40;box-shadow:0 6px 20px rgba(0,0,0,.2);max-width:calc(100% - 32px)}
+.menu{position:fixed;right:max(16px,env(safe-area-inset-right,0px));top:48px;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 24px rgba(0,0,0,.14);padding:6px;z-index:30;min-width:220px}
+.menu button{display:block;width:100%;text-align:left;border:0;background:none;padding:7px 10px;border-radius:5px;cursor:pointer}
+.menu button:hover{background:var(--sunk)}
+.menu .who{padding:7px 10px;border-bottom:1px solid var(--line);margin-bottom:4px;font-size:12px}
+.feed{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(64px + env(safe-area-inset-bottom,0px));display:grid;gap:6px;z-index:35;width:min(340px,calc(100% - 32px))}
+.fi{display:grid;gap:2px;text-align:left;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--good);border-radius:6px;padding:7px 10px;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.12);cursor:pointer}
+.fi.s51{border-left-color:var(--bad)} .fi.sW{border-left-color:var(--warn)}
+.fi .fh{display:flex;justify-content:space-between;gap:8px}
+.fi .mut{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qf{display:inline-flex;gap:4px;align-items:center}
+.qi{border:1px solid var(--line2);background:var(--surface);border-radius:5px;padding:3px 6px;font-size:12px;color:var(--fg)}
+.dz{transition:background .15s}
+.dz.over{background:var(--accent-soft);outline:2px dashed var(--accent);outline-offset:-6px}
+.arch .node{cursor:pointer}.arch .node:hover rect{stroke:var(--accent)}
+.flow{stroke-dasharray:5 5}
+@media (prefers-reduced-motion:no-preference){.flow{animation:dash 1.2s linear infinite}@keyframes dash{to{stroke-dashoffset:-20}}.fi{animation:pop .25s ease-out}@keyframes pop{from{transform:translateY(8px);opacity:0}}}
+.btn.brand{background:var(--brand);border-color:var(--brand);color:#fff}
+.passport{background:#171a20;color:#f4f4f4;border-radius:12px;padding:16px;display:grid;gap:14px;position:relative;overflow:hidden;border:1px solid #2e3036}
+.passport::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 2px,transparent 2px 9px);pointer-events:none}
+.passport > *{position:relative}
+.pp-head{display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#a2a3a5}
+.pp-head b{color:#fff;font-weight:600}
+.pp-head i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e82127;margin-right:8px;vertical-align:1px}
+.pp-body{display:grid;grid-template-columns:104px minmax(0,1fr);gap:16px;align-items:start}
+.pp-photo{border-radius:6px;overflow:hidden;background:#222429;aspect-ratio:3/4;display:grid;place-items:center;color:#8e8f91;font-size:10.5px;text-align:center;letter-spacing:.08em;text-transform:uppercase;border:1px solid #2e3036;max-width:100%}
+.pp-photo .thumb{aspect-ratio:auto;height:100%;border:0;background:#2a2c31}
+.pp-photo .thumb svg{stroke:#a2a3a5}
+.pp-photo .thumb .fmt{display:none}
+.pp-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px 14px;min-width:0}
+.pp-f span{display:block;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#8e8f91}
+.pp-f b{font-family:var(--mono);font-size:12.5px;font-weight:500;color:#f4f4f4;overflow-wrap:anywhere}
+.pp-f .miss b{color:#ff5a5f}
+.pp-low{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.pp-stamps{display:flex;gap:10px;flex-wrap:wrap}
+.stamp{width:76px;height:76px;border-radius:50%;border:2px dashed #3c3f46;display:grid;place-content:center;text-align:center;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#6f7074;line-height:1.25}
+.stamp b{display:block;font-size:11px;letter-spacing:.06em}
+.stamp.on{border:3px double var(--c);color:var(--c);background:rgba(255,255,255,.03)}
+.stamp.on:nth-child(1){transform:rotate(-9deg)} .stamp.on:nth-child(2){transform:rotate(7deg)} .stamp.on:nth-child(3){transform:rotate(-4deg)} .stamp.on:nth-child(4){transform:rotate(10deg)}
+.pp-status{font-family:var(--mono);font-size:12px;letter-spacing:.14em;padding:7px 12px;border-radius:4px;text-transform:uppercase}
+.pp-status.ok{background:rgba(76,195,138,.15);color:#4cc38a}
+.pp-status.held{background:rgba(232,33,39,.16);color:#ff6a6f}
+.pp-mrz{font-family:var(--mono);font-size:11px;color:#6f7074;letter-spacing:.16em;white-space:nowrap;overflow:hidden;border-top:1px solid #2e3036;padding-top:9px}
+@media (prefers-reduced-motion:no-preference){.stamp.new{animation:stampin .5s cubic-bezier(.2,1.5,.4,1)}@keyframes stampin{from{transform:scale(1.9) rotate(-25deg);opacity:0}}}
+@media (max-width:520px){.pp-body{grid-template-columns:72px minmax(0,1fr)}.stamp{width:64px;height:64px}}
+.tour{position:fixed;left:max(16px,env(safe-area-inset-left,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(370px,calc(100% - 32px));background:#000;color:#fff;border-radius:12px;padding:14px 16px;z-index:36;box-shadow:0 14px 34px rgba(0,0,0,.4);display:grid;gap:9px;border-top:3px solid #e82127}
+.tour .tt{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:#8e8f91}
+.tour .tt button{background:none;border:0;color:#a2a3a5;font-size:18px;cursor:pointer;line-height:1}
+.tour b{font-size:16px}
+.tour p{margin:0;color:#c9cacc;font-size:13px;line-height:1.45}
+.tour .btn{background:#171a20;border-color:#3c3f46;color:#fff}
+.tour .btn.pri{background:#3e6ae1;border-color:#3e6ae1;color:#fff}
+.tour .btn.brand{background:#e82127;border-color:#e82127}
+.tour .row{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.tdots{display:flex;gap:5px}.tdots i{width:18px;height:3px;border-radius:2px;background:#3c3f46}.tdots i.on{background:#e82127}
+.statusbar{display:flex;gap:16px;align-items:center;font-family:var(--mono);font-size:11px;color:var(--muted);border-top:1px solid var(--line);background:var(--surface);padding-block:5px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));margin-top:auto;flex-wrap:wrap}
+.statusbar b{color:var(--fg);font-weight:500}
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  aside.side{position:static;height:auto;flex-direction:row;align-items:center;gap:10px;overflow-x:auto;padding-block:8px;padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .navgrp{display:flex;gap:2px}.navgrp .lbl,.side .foot,.brand small{display:none}
+  .cmd,.env{display:none}
+}
+@media (prefers-reduced-motion:no-preference){.drawer{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="mark">S</div><div><b>SpareLink</b><small>Service parts</small></div></div>
+    <nav class="navgrp" aria-label="Overview">
+      <div class="lbl">Overview</div>
+      <a href="#readiness"><svg viewBox="0 0 24 24"><path d="M4 13h6V4H4zM14 20h6V11h-6zM4 20h6v-3H4zM14 7h6V4h-6z"/></svg>Data readiness</a>
+    </nav>
+    <nav class="navgrp" aria-label="Product data">
+      <div class="lbl">Product data</div>
+      <a href="#pim"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 9h16M9 9v10"/></svg>Product information<span class="cnt" id="cntPim"></span></a>
+      <a href="#dam"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/><circle cx="15.5" cy="9.5" r="1.5"/></svg>Digital assets<span class="cnt" id="cntDam"></span></a>
+    </nav>
+    <nav class="navgrp" aria-label="SpareLink">
+      <div class="lbl">SpareLink</div>
+      <a href="#materials"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg>Material master</a>
+      <a href="#orders"><svg viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 10h4l3 3v4h-7M7 19a2 2 0 100-4 2 2 0 000 4zM17 19a2 2 0 100-4 2 2 0 000 4z"/></svg>Service orders<span class="cnt" id="cntSo"></span></a>
+    </nav>
+    <nav class="navgrp" aria-label="Integration">
+      <div class="lbl">Integration</div>
+      <a href="#hub"><svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="19" cy="18" r="2"/><path d="M7 12h5l5-6M12 12l5 6"/></svg>Integration hub<span class="cnt red" id="cntHub"></span></a>
+      <a href="#changes"><svg viewBox="0 0 24 24"><path d="M7 7h11l-3-3M17 17H6l3 3"/></svg>Engineering changes</a>
+    </nav>
+    <div class="foot">Built exclusively for the Tesla Supply Chain Systems Product Manager application by Avantika Thakur. Concept build with sample data; not affiliated with or endorsed by Tesla.</div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="crumbs" id="crumbs"></div>
+      <label class="cmd" for="cmd"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="cmd" placeholder="Search  ( / )" autocomplete="off"></label>
+      <button class="btn sm brand" id="tourBtn">Interview mode</button>
+      <span class="env">For Tesla · Supply Chain Systems Product Manager</span>
+      <button class="avatar" id="avatar" aria-label="Account menu">AT</button>
+    </header>
+    <div class="content" id="view"></div>
+    <div class="statusbar" id="status"></div>
+  </div>
+</div>
+<input type="file" id="fileIn" hidden multiple>
+<div id="layer"></div>
+<div class="feed" id="feed" aria-live="polite"></div>
+<div class="tour" id="tour" role="dialog" aria-label="Interview mode" hidden></div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const usd=n=>"$"+Number(n).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const TODAY=new Date(2026,9,27);
+const sapD=d=>`${String(d.getMonth()+1).padStart(2,"0")}/${String(d.getDate()).padStart(2,"0")}/${d.getFullYear()}`;
+const nowTs=()=>sapD(TODAY)+" "+new Date().toLocaleTimeString("en-US",{hour:"2-digit",minute:"2-digit",hour12:false});
+function bizDate(n){const d=new Date(TODAY);let k=0;while(k<n){d.setDate(d.getDate()+1);const w=d.getDay();if(w&&w!==6)k++;}return d.toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"});}
+
+/* ============ reference data ============ */
+const PLANTS={US10:{name:"DC West",loc:"Lathrop, CA",zone:1},US20:{name:"DC Central",loc:"Dallas, TX",zone:4},US30:{name:"DC East",loc:"Edison, NJ",zone:5}};
+const CATS={"Autopilot / Vision":"Autopilot / Vision","Suspension":"Suspension","Drive unit":"Drive unit","High voltage":"High voltage","Body electrical":"Body electrical","Heating and cooling":"Heating and cooling","Low voltage":"Low voltage"};
+const HAZ=["Not regulated","UN3480 · Class 9 · Lithium-ion battery","UN2794 · Class 8 · Lead-acid battery","UN1950 · Class 2.1 · Aerosol"];
+const MODELS=["Model 3","Model Y","Model S","Model X","Cybertruck"];
+const ATYPE={hero:"Hero image",exploded:"Exploded view",install:"Install guide",spec:"Spec sheet",sds:"Safety data sheet"};
+const MODES={GROUND:{label:"Ground",c:"var(--good)"},TWODAY:{label:"2-day",c:"var(--accent)"},OVERNIGHT:{label:"Overnight",c:"var(--warn)"}};
+const RATES={GROUND:{base:9,perLb:.55},TWODAY:{base:21,perLb:1.5},OVERNIGHT:{base:38,perLb:2.7}},ZF={1:1,2:1.12,3:1.25,4:1.45,5:1.65},DIM=139,BUFFER=1;
+const FIELDS={
+ name:{l:"Short description",sap:"MAKT-MAKTX"},
+ cat:{l:"Product category",sap:"MARA-MATKL"},
+ rev:{l:"Revision",sap:"MARA-REVLV"},
+ std:{l:"Standard price",sap:"MBEW-STPRS"},
+ weight:{l:"Gross weight",sap:"MARA-BRGEW"},
+ dims:{l:"Dimensions (length, width, height)",sap:"MARA-LAENG/BREIT/HOEHE"},
+ hazmat:{l:"Dangerous goods class",sap:"MARA-PROFL"},
+ hts:{l:"Harmonized tariff code",sap:"MARC-STAWN"},
+ origin:{l:"Country of origin",sap:"MARC-HERKL"},
+ fitment:{l:"Vehicle fitment",sap:"AUSP · SERVICE_FIT"},
+ laborOp:{l:"Labor operation",sap:"AUSP · LABOR_OP"},
+ torque:{l:"Torque spec",sap:"AUSP · TORQUE"},
+ catalogTitle:{l:"Catalog title",sap:"catalog API"},
+ catalogDesc:{l:"Catalog description",sap:"catalog API"},
+ hero:{l:"Approved hero image",sap:"DRAD · DIR"},
+ exploded:{l:"Approved exploded view",sap:"DRAD · DIR"},
+ sds:{l:"Safety data sheet (dangerous goods only)",sap:"DRAD · DIR"}
+};
+const CH={
+ warp:{label:"SpareLink",req:["name","cat","std","weight","dims","hazmat","hts","origin"],c:"var(--accent)"},
+ carrier:{label:"Carrier rating",req:["weight","dims","hazmat","sds"],c:"var(--good)"},
+ catalog:{label:"Service catalog",req:["catalogTitle","catalogDesc","fitment","hero"],c:"var(--info)"},
+ toolbox:{label:"Technician toolbox",req:["exploded","laborOp","torque","fitment"],c:"var(--warn)"}
+};
+
+/* ============ seed ============ */
+const rec=o=>Object.assign({pn:"",name:"",cat:"",rev:"",std:null,weight:null,len:null,wid:null,hgt:null,hazmat:"",hts:"",origin:"",fitment:[],laborOp:"",torque:"",catalogTitle:"",catalogDesc:"",status:"Draft",steward:"",prev:"",follow:"",eco:"",hist:[]},o);
+function snap(r,assets,ts){
+  return {matnr:r.pn,maktx:r.name,mtart:"Spare part",meins:"Each",matkl:CATS[r.cat]||"",revlv:r.rev,stprs:r.std,brgew:r.weight,gewei:"pounds",laeng:r.len,breit:r.wid,hoehe:r.hgt,meabm:"inches",
+    profl:r.hazmat&&r.hazmat!=="Not regulated"?r.hazmat.split("·").slice(1).join("·").trim():"",stawn:r.hts,herkl:r.origin,nfmat:r.follow||"",
+    docs:assets.filter(a=>a.parts.includes(r.pn)&&a.status==="Approved").map(a=>a.id),lastSync:ts,sync:"OK"};
+}
+const SEED=()=>{
+ const records=[
+  rec({pn:"1514392-00-A",name:"CAMERA ASSEMBLY, FRONT, REVISION A",cat:"Autopilot / Vision",rev:"A",std:196,weight:3,len:6,wid:4,hgt:3,hazmat:"Not regulated",hts:"8525.89.5000",origin:"Mexico",fitment:["Model 3","Model Y"],laborOp:"17100202",torque:"8 Nm",catalogTitle:"Front Camera Assembly (Revision A)",catalogDesc:"Replaced by revision B. Fully interchangeable.",status:"Superseded",steward:"Avantika Thakur",follow:"1514392-00-B"}),
+  rec({pn:"1514392-00-B",name:"CAMERA ASSEMBLY, FRONT, REVISION B",cat:"Autopilot / Vision",rev:"B",std:198,weight:3,len:6,wid:4,hgt:3,hazmat:"Not regulated",hts:"8525.89.5000",origin:"Mexico",fitment:["Model 3","Model Y"],laborOp:"17100202",torque:"8 Nm",catalogTitle:"Front Camera Assembly",catalogDesc:"Forward-facing camera module with improved lens heater. Includes bracket.",status:"Published",steward:"Avantika Thakur",prev:"1514392-00-A",eco:"CHANGE-24817",hist:[{ts:"10/12/2026 09:14",cls:"acc",txt:"Draft created from engineering change CHANGE-24817"},{ts:"10/12/2026 11:40",cls:"",txt:"Attributes copied from revision A"},{ts:"10/13/2026 08:05",cls:"ok",txt:"Approved and published to SpareLink"}]}),
+  rec({pn:"1188322-00-C",name:"ARM, CONTROL, LOWER FRONT LEFT",cat:"Suspension",rev:"C",std:132,weight:11,len:18,wid:7,hgt:5,hazmat:"Not regulated",hts:"8708.80.6590",origin:"United States",fitment:["Model Y"],laborOp:"31050102",torque:"115 Nm + 90°",catalogTitle:"Front Lower Control Arm, Left",catalogDesc:"Forged aluminum lower control arm with pre-installed bushings.",status:"Published",steward:"Jorge Navarro"}),
+  rec({pn:"1475027-00-D",name:"SEAL KIT, REAR DRIVE UNIT, REVISION D",cat:"Drive unit",rev:"D",std:31,weight:1,len:5,wid:5,hgt:2,hazmat:"Not regulated",hts:"8484.20.0000",origin:"Japan",fitment:["Model 3","Model Y"],laborOp:"39010302",torque:"25 Nm",catalogTitle:"Rear Drive Unit Seal Kit",catalogDesc:"Output shaft and housing seals for rear drive unit.",status:"Published",steward:"Avantika Thakur"}),
+  rec({pn:"1475027-00-E",name:"SEAL KIT, REAR DRIVE UNIT, REVISION E",cat:"Drive unit",rev:"E",status:"Draft",prev:"1475027-00-D",eco:"CHANGE-25102",hist:[{ts:"10/26/2026 16:02",cls:"acc",txt:"Draft created from engineering change CHANGE-25102"}]}),
+  rec({pn:"1128765-00-A",name:"CONTACTOR, HIGH VOLTAGE BATTERY",cat:"High voltage",rev:"A",std:82,weight:2,len:4,wid:3,hgt:3,hazmat:"Not regulated",hts:"8536.49.0080",origin:"Germany",fitment:["Model S","Model X"],laborOp:"16200101",torque:"12 Nm",catalogTitle:"HV Battery Contactor",catalogDesc:"Main pack contactor. High-voltage certified technicians only.",status:"Published",steward:"Mei Chen"}),
+  rec({pn:"1490151-00-B",name:"MOTOR ASSEMBLY, WINDSHIELD WIPER",cat:"Body electrical",rev:"B",std:61,weight:null,len:12,wid:6,hgt:5,hazmat:"Not regulated",hts:"8501.31.4000",origin:"China",fitment:[],laborOp:"12100201",torque:"",catalogTitle:"Windshield Wiper Motor",catalogDesc:"Wiper motor and linkage drive assembly.",status:"In review",steward:"Mei Chen",hist:[{ts:"10/27/2026 07:41",cls:"bad",txt:"Publish to SpareLink failed: gross weight missing"}]}),
+  rec({pn:"1107681-00-C",name:"FILTER SET, CABIN AIR",cat:"Heating and cooling",rev:"C",std:11,weight:1,len:10,wid:8,hgt:2,hazmat:"Not regulated",hts:"8421.39.8015",origin:"United States",fitment:["Model 3","Model Y"],laborOp:"18300100",torque:"n/a",catalogTitle:"Cabin Air Filter Set (2 pc)",catalogDesc:"HEPA-grade cabin air filters, set of two.",status:"Published",steward:"Jorge Navarro"}),
+  rec({pn:"1129604-00-A",name:"BATTERY, 12 VOLT, LITHIUM-ION",cat:"Low voltage",rev:"A",std:104,weight:9,len:10,wid:7,hgt:7,hazmat:"UN3480 · Class 9 · Lithium-ion battery",hts:"8507.60.0020",origin:"South Korea",fitment:["Model 3","Model Y"],laborOp:"17230102",torque:"6 Nm",catalogTitle:"12 Volt Low-Voltage Battery (Lithium-ion)",catalogDesc:"Lithium-ion low-voltage battery. Ships ground only.",status:"Published",steward:"Mei Chen"})
+ ];
+ const assets=[
+  {id:"ASSET-20114",type:"hero",fmt:"PNG",file:"1514392-B_hero.png",size:"2.4 MB",ver:3,status:"Approved",parts:["1514392-00-B"],rights:"Owned",by:"Photo studio",created:"09/30/2026"},
+  {id:"ASSET-20115",type:"exploded",fmt:"SVG",file:"1514392_exploded.svg",size:"860 KB",ver:2,status:"Approved",parts:["1514392-00-A","1514392-00-B"],rights:"Owned",by:"Service engineering",created:"10/12/2026",eco:"CHANGE-24817"},
+  {id:"ASSET-20116",type:"install",fmt:"PDF",file:"1514392_install_guide.pdf",size:"1.1 MB",ver:1,status:"Approved",parts:["1514392-00-A","1514392-00-B"],rights:"Owned",by:"Service engineering",created:"10/12/2026"},
+  {id:"ASSET-20210",type:"hero",fmt:"JPG",file:"1188322-C_hero.jpg",size:"3.1 MB",ver:1,status:"Approved",parts:["1188322-00-C"],rights:"Owned",by:"Photo studio",created:"06/04/2026"},
+  {id:"ASSET-20211",type:"exploded",fmt:"SVG",file:"1188322_exploded.svg",size:"640 KB",ver:1,status:"Approved",parts:["1188322-00-C"],rights:"Owned",by:"Service engineering",created:"06/04/2026"},
+  {id:"ASSET-20330",type:"hero",fmt:"JPG",file:"1475027-D_hero.jpg",size:"1.8 MB",ver:1,status:"Approved",parts:["1475027-00-D"],rights:"Owned",by:"Photo studio",created:"03/18/2026"},
+  {id:"ASSET-20331",type:"exploded",fmt:"SVG",file:"1475027-D_exploded.svg",size:"510 KB",ver:1,status:"Approved",parts:["1475027-00-D"],rights:"Owned",by:"Service engineering",created:"03/18/2026"},
+  {id:"ASSET-20345",type:"exploded",fmt:"SVG",file:"1475027-E_exploded.svg",size:"530 KB",ver:1,status:"In review",parts:[],rights:"Owned",by:"Engineering change package",created:"10/26/2026",eco:"CHANGE-25102",suggest:"1475027-00-E"},
+  {id:"ASSET-20346",type:"hero",fmt:"JPG",file:"1475027-E_hero.jpg",size:"1.9 MB",ver:1,status:"In review",parts:[],rights:"Owned",by:"Engineering change package",created:"10/26/2026",eco:"CHANGE-25102",suggest:"1475027-00-E"},
+  {id:"ASSET-20410",type:"exploded",fmt:"SVG",file:"1128765_exploded.svg",size:"720 KB",ver:1,status:"Approved",parts:["1128765-00-A"],rights:"Owned",by:"Service engineering",created:"02/11/2026"},
+  {id:"ASSET-20520",type:"hero",fmt:"JPG",file:"1490151-B_hero.jpg",size:"2.2 MB",ver:1,status:"Approved",parts:["1490151-00-B"],rights:"Owned",by:"Photo studio",created:"05/09/2026"},
+  {id:"ASSET-20610",type:"hero",fmt:"JPG",file:"1107681-C_hero.jpg",size:"1.4 MB",ver:2,status:"Approved",parts:["1107681-00-C"],rights:"Owned",by:"Photo studio",created:"04/22/2026"},
+  {id:"ASSET-20611",type:"exploded",fmt:"SVG",file:"1107681_location.svg",size:"300 KB",ver:1,status:"Approved",parts:["1107681-00-C"],rights:"Owned",by:"Service engineering",created:"04/22/2026"},
+  {id:"ASSET-20612",type:"install",fmt:"PDF",file:"1107681_install_guide.pdf",size:"700 KB",ver:1,status:"Approved",parts:["1107681-00-C"],rights:"Owned",by:"Service engineering",created:"04/22/2026"},
+  {id:"ASSET-20710",type:"hero",fmt:"JPG",file:"12volt_lithium_lifestyle.jpg",size:"4.6 MB",ver:1,status:"Approved",parts:["1129604-00-A"],rights:"Licensed · expired 10/15/2026",exp:"2026-10-15",by:"Agency",created:"10/15/2025"},
+  {id:"ASSET-20711",type:"sds",fmt:"PDF",file:"1129604_safety_data_sheet_rev3.pdf",size:"420 KB",ver:3,status:"Approved",parts:["1129604-00-A"],rights:"Owned",by:"Environment, health and safety",created:"08/01/2026"},
+  {id:"ASSET-20712",type:"exploded",fmt:"SVG",file:"1129604_exploded.svg",size:"480 KB",ver:1,status:"Approved",parts:["1129604-00-A"],rights:"Owned",by:"Service engineering",created:"08/01/2026"},
+  {id:"ASSET-20713",type:"hero",fmt:"PNG",file:"1129604-A_studio.png",size:"2.0 MB",ver:1,status:"In review",parts:[],rights:"Owned",by:"Photo studio",created:"10/24/2026",suggest:"1129604-00-A"}
+ ];
+ const stock={"1514392-00-A":{US10:0,US20:0,US30:0},"1514392-00-B":{US10:3,US20:14,US30:5},"1188322-00-C":{US10:4,US20:22,US30:9},"1475027-00-D":{US10:7,US20:40,US30:18},"1475027-00-E":{US10:0,US20:24,US30:6},"1128765-00-A":{US10:0,US20:6,US30:2},"1490151-00-B":{US10:0,US20:4,US30:3},"1107681-00-C":{US10:40,US20:160,US30:30},"1129604-00-A":{US10:6,US20:9,US30:4}};
+ const S0={records,assets,stock,warp:{},seq:{msg:4718240,dam:20800},
+  ecos:[
+   {id:"CHANGE-24817",title:"Front camera revision B: improved lens heater",oldPn:"1514392-00-A",newPn:"1514392-00-B",type:"FULL",plm:"Released",plmDate:"10/12/2026"},
+   {id:"CHANGE-25102",title:"Rear drive unit seal kit revision E: revised lip seal material",oldPn:"1475027-00-D",newPn:"1475027-00-E",type:"ONE_WAY",plm:"Released",plmDate:"10/26/2026"},
+   {id:"CHANGE-25140",title:"Wiper motor revision C: connector change",oldPn:"1490151-00-B",newPn:"1490151-00-C",type:"ONE_WAY",plm:"In review",plmDate:""}],
+  msgs:[
+   {id:"0000004718231",ts:"10/26/2026 16:02",iface:"Engineering → Product Information",type:"Engineering change",obj:"1475027-00-E",status:"53",text:"Draft record created from engineering change CHANGE-25102"},
+   {id:"0000004718232",ts:"10/26/2026 16:02",iface:"Engineering → Digital Assets",type:"Asset upload",obj:"CHANGE-25102",status:"53",text:"2 assets received with the engineering change package (ASSET-20345, ASSET-20346)"},
+   {id:"0000004718235",ts:"10/27/2026 06:00",iface:"Digital Assets → Catalog",type:"Usage rights",obj:"ASSET-20710",status:"W",text:"Usage rights expired 10/15/2026. Rendition withdrawn from service catalog."},
+   {id:"0000004718237",ts:"10/27/2026 07:30",iface:"Product Information → SpareLink",type:"Material master update",obj:"1129604-00-A",status:"53",text:"Material updated (dangerous goods, tariff code)"},
+   {id:"0000004718238",ts:"10/27/2026 07:31",iface:"SpareLink → Carrier",type:"Freight rating",obj:"1129604-00-A",status:"53",text:"Dangerous goods flag sent. Air shipping turned off."},
+   {id:"0000004718239",ts:"10/27/2026 07:41",iface:"Product Information → SpareLink",type:"Material master update",obj:"1490151-00-B",status:"51",text:"Gross weight is required for spare parts"}
+  ],
+  orders:[
+   {id:"ORDER-880401",sc:"Fremont Service Center",vin:"…7Y4821",model:"Model Y",pn:"1514392-00-A",appt:5,status:"Open"},
+   {id:"ORDER-880402",sc:"San Jose Service Center",vin:"…9P1177",model:"Model Y",pn:"1188322-00-C",appt:4,status:"Open"},
+   {id:"ORDER-880403",sc:"Sacramento Service Center",vin:"…3K5530",model:"Model 3",pn:"1475027-00-E",appt:6,status:"Open",note:"Service bulletin 26-39-004"},
+   {id:"ORDER-880406",sc:"San Jose Service Center",vin:"…6T4409",model:"Model 3",pn:"1490151-00-B",appt:4,status:"Open"},
+   {id:"ORDER-880408",sc:"Oakland Service Center",vin:"…8H3360",model:"Model Y",pn:"1475027-00-E",appt:3,status:"Open",note:"Service bulletin 26-39-004"},
+   {id:"ORDER-880409",sc:"Fremont Service Center",vin:"…4C9051",model:"Model 3",pn:"1107681-00-C",appt:2,status:"Open"},
+   {id:"ORDER-880410",sc:"Palo Alto Service Center",vin:"…0V2287",model:"Model Y",pn:"1129604-00-A",appt:5,status:"Open"}
+  ]};
+ records.filter(r=>r.status==="Published"||r.status==="Superseded").forEach((r,i)=>S0.warp[r.pn]=snap(r,assets,`10/${String(13+i).padStart(2,"0")}/2026 08:0${i}`));
+ const wiper=records.find(r=>r.pn==="1490151-00-B");S0.warp[wiper.pn]=Object.assign(snap(wiper,assets,"05/09/2026 10:12"),{brgew:null,sync:"Error"});
+ return S0;
+};
+const KEY="sparelink-v2";
+let S;try{S=JSON.parse(localStorage.getItem(KEY)||"null");}catch(e){S=null}
+if(!S||!S.records) S=SEED();
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){try{S.assets.forEach(a=>delete a.data);localStorage.setItem(KEY,JSON.stringify(S));}catch(_){}}};
+const R=pn=>S.records.find(r=>r.pn===pn);
+const A=id=>S.assets.find(a=>a.id===id);
+
+/* ============ PIM logic ============ */
+const expired=a=>!!a.exp&&new Date(a.exp+"T00:00")<TODAY;
+const usable=a=>a.status==="Approved"&&!expired(a);
+const linked=(r,type)=>S.assets.filter(a=>a.parts.includes(r.pn)&&(!type||a.type===type));
+const htsOk=v=>/^\d{4}\.\d{2}\.\d{4}$/.test(v||"");
+function has(r,k){
+  switch(k){
+   case "name":return !!r.name; case "cat":return !!r.cat; case "rev":return !!r.rev; case "std":return r.std>0;
+   case "weight":return r.weight>0; case "dims":return r.len>0&&r.wid>0&&r.hgt>0; case "hazmat":return !!r.hazmat;
+   case "hts":return htsOk(r.hts); case "origin":return !!r.origin;
+   case "fitment":return r.fitment.length>0; case "laborOp":return !!r.laborOp; case "torque":return !!r.torque;
+   case "catalogTitle":return !!r.catalogTitle; case "catalogDesc":return !!r.catalogDesc;
+   case "hero":return linked(r,"hero").some(usable); case "exploded":return linked(r,"exploded").some(usable);
+   case "sds":return r.hazmat==="Not regulated"||(!!r.hazmat&&linked(r,"sds").some(usable));
+  } return false;
+}
+const chPct=(r,c)=>Math.round(CH[c].req.filter(k=>has(r,k)).length/CH[c].req.length*100);
+const avgPct=r=>Math.round(Object.keys(CH).reduce((a,c)=>a+chPct(r,c),0)/4);
+function issues(r){
+  const out=[];
+  CH.warp.req.forEach(k=>{if(!has(r,k))out.push({sev:"error",ch:"warp",k,txt:`${FIELDS[k].l} missing or invalid. Required by SpareLink.`});});
+  if(/battery/i.test(r.name)&&r.hazmat==="Not regulated")out.push({sev:"error",ch:"carrier",k:"hazmat",txt:"Batteries must declare a dangerous goods class."});
+  if(r.hazmat&&r.hazmat!=="Not regulated"&&!has(r,"sds"))out.push({sev:"error",ch:"carrier",k:"sds",txt:"Dangerous goods need an approved safety data sheet in Digital Assets."});
+  ["catalog","toolbox"].forEach(c=>CH[c].req.forEach(k=>{if(!has(r,k)&&!out.some(o=>o.k===k))out.push({sev:"warn",ch:c,k,txt:`${FIELDS[k].l} missing. ${CH[c].label} incomplete.`});}));
+  linked(r).filter(expired).forEach(a=>out.push({sev:"warn",ch:"catalog",k:"rights",txt:`${a.id} usage rights expired ${a.exp}.`,asset:a.id}));
+  linked(r).filter(a=>a.status==="In review").forEach(a=>out.push({sev:"warn",ch:"catalog",k:"review",txt:`${a.id} (${ATYPE[a.type]}) is linked but not yet approved in Digital Assets.`,asset:a.id}));
+  return out;
+}
+const errs=r=>issues(r).filter(i=>i.sev==="error");
+function msg(iface,type,obj,status,text){const m={id:String(++S.seq.msg).padStart(13,"0"),ts:nowTs(),iface,type,obj,status,text};S.msgs.push(m);feed(m);}
+let fq=0;function feed(m){const now=Date.now();const d=Math.max(0,fq-now);fq=Math.max(now,fq)+420;setTimeout(()=>{const f=document.getElementById("feed");if(!f)return;const el=document.createElement("button");el.className="fi s"+m.status;el.innerHTML=`<span class="fh"><b>${esc(m.iface)}</b><span class="mono">${m.status==="W"?"Warning":m.status==="51"?"Error":"Posted"}</span></span><span class="mut">${esc(m.type)} · ${esc(m.obj)} · ${esc(m.text)}</span>`;el.onclick=()=>{el.remove();location.hash="#hub";};f.appendChild(el);while(f.children.length>4)f.firstChild.remove();setTimeout(()=>el.remove(),5200);},d);}
+function publish(r){
+  const isNew=!S.warp[r.pn];
+  r.status="Published";r.dirty=false;
+  S.warp[r.pn]=snap(r,S.assets,nowTs());
+  msg("Product Information → SpareLink","Material master update",r.pn,"53",isNew?"Material created (spare part) with basic, logistics and trade views":"Material updated from Product Information");
+  const docs=S.warp[r.pn].docs;if(docs.length)msg("Digital Assets → SpareLink","Document link",r.pn,"53",`${docs.length} document link${docs.length>1?"s":""} attached: ${docs.join(", ")}`);
+  msg("SpareLink → Carrier","Freight rating",r.pn,"53",`Billable weight ${billable(S.warp[r.pn]).toFixed(1)} pounds${S.warp[r.pn].profl?", dangerous goods flag set":""}`);
+  if(chPct(r,"catalog")===100)msg("Product Information → Catalog","Catalog publish",r.pn,"53","Live in service parts catalog");
+  else msg("Product Information → Catalog","Catalog publish",r.pn,"W","Held from catalog: catalog attributes incomplete");
+  if(r.prev&&R(r.prev)&&R(r.prev).follow!==r.pn){const p=R(r.prev);const eco=S.ecos.find(e=>e.newPn===r.pn);p.follow=r.pn;if(S.warp[p.pn])S.warp[p.pn].nfmat=r.pn;
+    if(eco&&eco.type==="ONE_WAY")p.status="Phase-out";msg("Product Information → SpareLink","Material master update",p.pn,"53",`Follow-up material ${r.pn} set (MARC-NFMAT)`);}
+  S.msgs.filter(m=>m.obj===r.pn&&m.status==="51").forEach(m=>m.done=true);
+  r.hist.push({ts:nowTs(),cls:"ok",txt:isNew?"Approved and published. Material created in SpareLink.":"Republished. SpareLink material updated."});
+}
+
+/* ============ service order routing (downstream consumer) ============ */
+const billable=w=>Math.max(w.brgew||0,((w.laeng||0)*(w.breit||0)*(w.hoehe||0))/DIM);
+function routeSO(o){
+  let pn=o.pn;let w=S.warp[pn];
+  if(!w) return {block:"Not orderable: material not in SpareLink",pn};
+  if(w.nfmat&&S.warp[w.nfmat]){pn=w.nfmat;w=S.warp[pn];}
+  if(!(w.brgew>0)) return {block:"Cannot rate freight: gross weight missing",pn};
+  const bw=billable(w);const air=!w.profl;const opts=[];
+  Object.entries(PLANTS).forEach(([pl,P])=>{const q=(S.stock[pn]||{})[pl]||0;if(q<=0)return;
+    Object.keys(MODES).forEach(m=>{const eta=m==="GROUND"?P.zone:m==="TWODAY"?2:1;const fr=(RATES[m].base+RATES[m].perLb*bw)*ZF[P.zone];
+      opts.push({pl,m,eta,fr,landed:w.stprs+fr+6,ok:eta<=o.appt-BUFFER,allowed:m==="GROUND"||air});});});
+  const pick=["GROUND","TWODAY","OVERNIGHT"].map(m=>opts.filter(x=>x.m===m&&x.ok&&x.allowed).sort((a,b)=>a.landed-b.landed)[0]).find(Boolean)||null;
+  return {pn,bw,air,opts,pick};
+}
+
+/* ============ UI helpers ============ */
+const pill=(t,c)=>`<span class="pill ${c}">${esc(t)}</span>`;
+const wfPill=s=>s==="Published"?pill("Published","p-good"):s==="In review"?pill("In review","p-acc"):s==="Enrichment"?pill("Enrichment","p-warn"):s==="Draft"?pill("Draft","p-info"):pill(s,"p-mut");
+const aPill=a=>expired(a)?pill("Rights expired","p-bad"):a.status==="Approved"?pill("Approved","p-good"):pill(a.status,"p-acc");
+const msgPill=s=>s==="53"?pill("Posted","p-good"):s==="51"?pill("Error","p-bad"):pill("Warning","p-warn");
+const meterCls=p=>p<60?"b":p<100?"w":"";
+const meter=(p,w)=>`<div class="meter ${meterCls(p)}" style="${w?"width:"+w+"px":""}" title="${p}%"><i style="width:${p}%"></i></div>`;
+let tt;function toast(m){$$(".toast").forEach(t=>t.remove());const el=document.createElement("div");el.className="toast";el.setAttribute("role","status");el.textContent=m;document.body.appendChild(el);clearTimeout(tt);tt=setTimeout(()=>el.remove(),3200);}
+const layer=$("#layer");
+function closeLayer(){layer.innerHTML="";}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeLayer();if(e.key==="/"&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault();$("#cmd").focus();}});
+function drawer(label,head,body,pb){
+  layer.innerHTML=`<div class="scrim"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="${esc(label)}"><div class="dh ${pb?"pb":""}">${head}</div><div class="db">${body}</div></aside>`;
+  $(".scrim").onclick=closeLayer;layer.querySelectorAll(".x").forEach(c=>c.onclick=closeLayer);
+}
+const GLYPH={
+ hero:`<svg viewBox="0 0 48 36"><rect x="3" y="3" width="42" height="30" rx="3"/><path d="M3 27l11-10 9 8 7-6 15 12"/><circle cx="33" cy="11" r="3"/></svg>`,
+ exploded:`<svg viewBox="0 0 48 36"><rect x="6" y="5" width="10" height="8"/><rect x="20" y="14" width="10" height="8"/><rect x="33" y="23" width="10" height="8"/><path d="M16 9l4 5M30 18l3 5" stroke-dasharray="2 2"/></svg>`,
+ install:`<svg viewBox="0 0 48 36"><path d="M12 3h18l8 8v22H12z"/><path d="M30 3v8h8M17 17h15M17 22h15M17 27h9"/></svg>`,
+ spec:`<svg viewBox="0 0 48 36"><path d="M12 3h18l8 8v22H12z"/><path d="M17 15h16M17 20h16M17 25h16M25 15v15"/></svg>`,
+ sds:`<svg viewBox="0 0 48 36"><path d="M24 3l15 15-15 15L9 18z"/><path d="M24 11v9M24 24v1"/></svg>`
+};
+const thumb=a=>`<div class="thumb t-${a.type}">${a.data?`<img src="${a.data}" alt="${esc(a.file)}">`:GLYPH[a.type]||GLYPH.spec}<span class="fmt">${esc(a.fmt)}</span></div>`;
+const acard=a=>`<button class="acard" data-asset="${a.id}">${thumb(a)}<div class="meta"><b>${esc(ATYPE[a.type])}</b><span class="fn">${a.id} · v${a.ver} · ${esc(a.file)}</span><span>${aPill(a)}</span></div></button>`;
+const STAMPS=[["warp","SpareLink","#5b82ec"],["carrier","Carrier","#4cc38a"],["catalog","Catalog","#f0b35a"],["toolbox","Toolbox","#ff5a5f"]];
+const seenStamps={};
+function passport(r){
+  const hero=linked(r,"hero").find(usable);const e=errs(r).length;
+  const on=STAMPS.map(([c])=>chPct(r,c)===100);const prev=seenStamps[r.pn]||[];seenStamps[r.pn]=on;
+  const miss=Object.keys(CH).reduce((a,c)=>a+CH[c].req.filter(k=>!has(r,k)).length,0);
+  const missing=new Set(Object.keys(CH).flatMap(c=>CH[c].req.filter(k=>!has(r,k))));
+  const cleared=S.warp[r.pn]&&!r.dirty&&e===0&&r.status!=="In review";
+  const f=(l,v,k)=>`<div class="${k&&missing.has(k)?"miss":""}"><span>${l}</span><b>${v==null||v===""?"—":esc(v)}</b></div>`;
+  const mrz=("P<SPARE<"+r.pn.replace(/-/g,"<")+"<<"+(r.name||"").replace(/[^A-Z0-9]+/g,"<")+"<".repeat(40)).slice(0,58);
+  return `<section class="passport" aria-label="Part passport">
+   <div class="pp-head"><span><i></i><b>Part passport</b></span><span>${esc(r.status)} · Revision ${esc(r.rev)}</span></div>
+   <div class="pp-body"><div class="pp-photo">${hero?thumb(hero):"No approved<br>photo"}</div>
+    <div class="pp-f">${f("Part number",r.pn)}${f("Description",r.name,"name")}${f("Weight",r.weight?r.weight+" pounds":"","weight")}${f("Size (inches)",r.len&&r.wid&&r.hgt?`${r.len}×${r.wid}×${r.hgt}`:"","dims")}${f("Dangerous goods",r.hazmat?(r.hazmat==="Not regulated"?"None":r.hazmat.split("·")[1].trim()):"","hazmat")}${f("Tariff code",r.hts,"hts")}${f("Origin",r.origin,"origin")}${f("Price",r.std?usd(r.std):"","std")}</div></div>
+   <div class="pp-low"><div class="pp-stamps">${STAMPS.map(([c,l,col],i)=>`<div class="stamp ${on[i]?"on":""} ${on[i]&&!prev[i]&&prev.length?"new":""}" style="--c:${col}" title="${CH[c].label} ${chPct(r,c)}%">${on[i]?`<span><b>${l}</b>cleared</span>`:`<span><b>${l}</b>${chPct(r,c)}%</span>`}</div>`).join("")}</div>
+    <div class="pp-status ${cleared?"ok":"held"}">${cleared?"Cleared to travel":e?`Held · ${e} blocking`:S.warp[r.pn]&&!r.dirty?`Held · ${miss} missing`:r.status==="In review"?"Awaiting approval":"Not yet issued"}</div></div>
+</section>`;
+}
+function bindAssets(root){root.querySelectorAll("[data-asset]").forEach(b=>b.onclick=e=>{e.stopPropagation();openAsset(b.dataset.asset);});}
+function setCrumbs(a,b){$("#crumbs").innerHTML=esc(a)+(b?` <span>/ ${esc(b)}</span>`:"");}
+function counts(){
+  const pimN=S.records.filter(r=>["Draft","Enrichment","In review"].includes(r.status)).length;
+  const damN=S.assets.filter(a=>a.status==="In review"||expired(a)).length;
+  const hubN=S.msgs.filter(m=>m.status==="51"&&!m.done).length;
+  const soN=S.orders.filter(o=>o.status!=="Released"&&routeSO(o).block).length;
+  [["#cntPim",pimN],["#cntDam",damN],["#cntHub",hubN],["#cntSo",soN]].forEach(([s,n])=>{const el=$(s);el.textContent=n;el.hidden=!n;});
+  const ok=S.msgs.filter(m=>m.status==="53").length;
+  $("#status").innerHTML=`<span>User <b>Avantika Thakur</b></span><span>Role <b>Product data owner</b></span><span>Interfaces <b>${ok} posted · ${hubN} in error</b></span><span>Date <b>${sapD(TODAY)}</b></span>`;
+}
+
+/* ============ VIEWS ============ */
+const V={};
+let DF={cat:"ALL",model:"ALL"};
+V.readiness=()=>{
+  setCrumbs("Data readiness");
+  const live=S.records.filter(r=>r.status!=="Superseded"&&(DF.cat==="ALL"||r.cat===DF.cat)&&(DF.model==="ALL"||r.fitment.includes(DF.model)));
+  const ready=live.filter(r=>r.status==="Published"&&!r.dirty&&Object.keys(CH).every(c=>chPct(r,c)===100));
+  const avg=live.length?Math.round(live.reduce((a,r)=>a+avgPct(r),0)/live.length):0;
+  const allIss=live.flatMap(r=>issues(r).map(i=>Object.assign({pn:r.pn,name:r.name},i)));
+  const intErr=S.msgs.filter(m=>m.status==="51"&&!m.done);
+  const blocked=S.orders.filter(o=>o.status!=="Released"&&routeSO(o).block);
+  const chAvg=Object.keys(CH).map(c=>[c,live.length?Math.round(live.reduce((a,r)=>a+chPct(r,c),0)/live.length):0]);
+  const wf=["Draft","Enrichment","In review","Published","Phase-out"].map(s=>[s,live.filter(r=>r.status===s).length]);
+  const assetsIssue=S.assets.filter(a=>a.status==="In review"||expired(a)).length;
+  const eRec=R("1475027-00-E");
+  const ttr=[42,38,45,40,22,14,9,blocked.length];
+  $("#view").innerHTML=`
+  <div class="pagehead"><div><h1>Product data readiness</h1></div>
+   <div class="filters">
+    <label for="dCat">Category <select class="sel" id="dCat"><option value="ALL">All</option>${Object.keys(CATS).map(c=>`<option ${DF.cat===c?"selected":""}>${c}</option>`).join("")}</select></label>
+    <label for="dMod">Model <select class="sel" id="dMod"><option value="ALL">All</option>${MODELS.map(m=>`<option ${DF.model===m?"selected":""}>${m}</option>`).join("")}</select></label>
+   </div></div>
+  <div class="tiles">
+   <button class="tile" data-go="#pim"><div class="k">Service-ready parts</div><div class="v">${ready.length}/${live.length}</div><div class="d mut">all 4 channels complete</div></button>
+   <button class="tile" data-go="#pim"><div class="k">Average completeness</div><div class="v">${avg}%</div><div class="d down">▲ from 71% before Product Information</div></button>
+   <button class="tile" data-go="#pim"><div class="k">Open data issues</div><div class="v ${allIss.some(i=>i.sev==="error")?"up":""}">${allIss.length}</div><div class="d mut">${allIss.filter(i=>i.sev==="error").length} blocking SpareLink</div></button>
+   <button class="tile" data-go="#dam"><div class="k">Assets needing action</div><div class="v">${assetsIssue}</div><div class="d mut">review or rights</div></button>
+   <button class="tile" data-go="#hub"><div class="k">Interface errors</div><div class="v ${intErr.length?"up":""}">${intErr.length}</div><div class="d mut">failed messages</div></button>
+   <button class="tile" data-go="#orders"><div class="k">Orders blocked by data</div><div class="v ${blocked.length?"up":""}">${blocked.length}</div><div class="d mut">service orders</div></button>
+  </div>
+  <div class="g21">
+   <div class="card"><div class="hd"><h2>Service orders blocked by missing part data</h2><span class="chip">per week</span></div><div class="bd">${trendChart(["Sep 7","Sep 14","Sep 21","Sep 28","Oct 5","Oct 12","Oct 19","Oct 26"],ttr)}</div></div>
+   <div class="card"><div class="hd"><h2>Completeness by channel</h2></div><div class="bd" style="display:grid;gap:2px">
+    ${chAvg.map(([c,p])=>`<button class="hbar" data-ch="${c}"><span>${CH[c].label}</span><span class="bar"><i style="width:${p}%;background:${CH[c].c}"></i></span><span class="mono" style="text-align:right">${p}%</span></button>`).join("")}
+    <div class="sect">Enrichment workflow</div>
+    ${wf.map(([s,n])=>`<button class="hbar" data-wf="${s}"><span>${s}</span><span class="bar"><i style="width:${live.length?n/live.length*100:0}%;background:var(--muted)"></i></span><span class="mono" style="text-align:right">${n}</span></button>`).join("")}
+   </div></div>
+  </div>
+  <div class="card"><div class="hd"><h2>Data issues</h2><span class="chip">${allIss.length}</span></div><div class="tw"><table><thead><tr><th>Severity</th><th>Part</th><th>Channel</th><th>Issue</th><th>Quick fix</th></tr></thead><tbody>
+   ${allIss.sort((a,b)=>(a.sev==="error"?0:1)-(b.sev==="error"?0:1)).slice(0,12).map(i=>`<tr class="click" tabindex="0" data-pn="${i.pn}"><td>${i.sev==="error"?pill("Blocking","p-bad"):pill("Warning","p-warn")}</td><td><span class="m">${i.pn}</span> <span class="mut">${esc(i.name)}</span></td><td>${CH[i.ch].label}</td><td class="wrap">${esc(i.txt)}</td><td>${qf(i)}</td></tr>`).join("")||`<tr><td colspan="5" class="mut">No issues for this filter</td></tr>`}
+  </tbody></table></div></div>`;
+  $$(".qf").forEach(el=>{const b=el.querySelector("button");el.onclick=e=>e.stopPropagation();el.onkeydown=e=>{e.stopPropagation();if(e.key==="Enter"&&e.target.tagName!=="BUTTON")b.click();};
+    b.onclick=e=>{e.stopPropagation();const [pn,k]=el.dataset.qf.split("|");const r=R(pn);const v=[...el.querySelectorAll("input,select")].map(x=>x.value.trim());
+      if(k==="open"){openRec(pn,"assets");return;}
+      if(v.some(x=>x==="")){toast("Enter a value first");return;}
+      if(k==="dims"){r.len=+v[0];r.wid=+v[1];r.hgt=+v[2];}else if(k==="weight"||k==="std")r[k]=+v[0];else if(k==="origin")r.origin=v[0];else if(k==="name")r.name=v[0].toUpperCase();else r[k]=v[0];
+      r.steward=r.steward||"Avantika Thakur";if(r.status==="Draft")r.status="Enrichment";if(r.status==="Published"||r.status==="Phase-out")r.dirty=true;
+      r.hist.push({ts:nowTs(),cls:"",txt:`Quick fix: ${FIELDS[k].l}`});save();render();
+      const e2=errs(r).length;toast(has(r,k)?`${pn} · ${FIELDS[k].l} fixed${e2?` · ${e2} left`:" · ready for review"}`:`${FIELDS[k].l} still invalid`);};});
+  $("#dCat").onchange=e=>{DF.cat=e.target.value;V.readiness();};
+  $("#dMod").onchange=e=>{DF.model=e.target.value;V.readiness();};
+  $$("[data-go]").forEach(b=>b.onclick=()=>location.hash=b.dataset.go);
+  $$("[data-ch]").forEach(b=>b.onclick=()=>{PF.gap=b.dataset.ch;PF.status="All";location.hash="#pim";});
+  $$("[data-wf]").forEach(b=>b.onclick=()=>{PF.status=b.dataset.wf;PF.gap="ALL";location.hash="#pim";});
+  $$("tr[data-pn]").forEach(tr=>{tr.onclick=()=>openRec(tr.dataset.pn);tr.onkeydown=e=>{if(e.key==="Enter")openRec(tr.dataset.pn);};});
+};
+function qf(i){
+  if(i.sev!=="error")return "";const a=`data-qf="${i.pn}|${i.k}"`;const btn=`<button class="btn sm pri">Fix</button>`;
+  const inp=(ph,t,w,ml)=>`<input class="qi" type="${t||"text"}" placeholder="${ph}" ${ml?`maxlength="${ml}"`:""} style="width:${w||80}px" aria-label="${ph}">`;
+  switch(i.k){
+   case "weight":return `<span class="qf" ${a}>${inp("pounds","number",80)}${btn}</span>`;
+   case "std":return `<span class="qf" ${a}>${inp("US dollars","number",96)}${btn}</span>`;
+   case "dims":return `<span class="qf" ${a}>${inp("L","number",44)}${inp("W","number",44)}${inp("H","number",44)}${btn}</span>`;
+   case "hts":return `<span class="qf" ${a}>${inp("0000.00.0000","text",104)}${btn}</span>`;
+   case "origin":return `<span class="qf" ${a}>${inp("Country","text",110)}${btn}</span>`;
+   case "name":return `<span class="qf" ${a}>${inp("Description","text",140)}${btn}</span>`;
+   case "hazmat":return `<span class="qf" ${a}><select class="qi" aria-label="Dangerous goods class"><option value="">—</option>${HAZ.map(h=>`<option>${h}</option>`).join("")}</select>${btn}</span>`;
+   case "cat":return `<span class="qf" ${a}><select class="qi" aria-label="Category"><option value="">—</option>${Object.keys(CATS).map(c=>`<option>${c}</option>`).join("")}</select>${btn}</span>`;
+   case "sds":return `<span class="qf" data-qf="${i.pn}|open"><button class="btn sm">Open assets</button></span>`;
+  } return "";
+}
+function trendChart(lbl,v){
+  const W=620,H=200,L=34,Rr=16,T=14,B=26,iw=W-L-Rr,ih=H-T-B,mx=50;
+  const x=i=>L+i*iw/(lbl.length-1),y=d=>T+ih-(d/mx)*ih;let g="";
+  [0,10,20,30,40,50].forEach(d=>g+=`<line x1="${L}" x2="${W-Rr}" y1="${y(d)}" y2="${y(d)}" stroke="var(--line)"/><text x="${L-6}" y="${y(d)+3}" text-anchor="end">${d}</text>`);
+  const p=v.map((d,i)=>`${i?"L":"M"}${x(i)},${y(d)}`).join("");const gl=x(4);
+  return `<div class="tw"><svg class="chart" viewBox="0 0 ${W} ${H}" width="100%" style="min-width:420px" role="img" aria-label="Orders blocked by missing part data fell from about 40 a week to ${v[v.length-1]}">
+  ${g}<rect x="${gl}" y="${T}" width="${W-Rr-gl}" height="${ih}" fill="var(--accent)" opacity=".05"/><line x1="${gl}" x2="${gl}" y1="${T}" y2="${T+ih}" stroke="var(--accent)" stroke-dasharray="3 3"/><text x="${gl+6}" y="${T+11}" style="fill:var(--accent)">Product Information + Digital Assets live</text>
+  <path d="${p} L${x(v.length-1)},${y(0)} L${x(0)},${y(0)}Z" fill="var(--accent)" opacity=".1"/><path d="${p}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+  ${v.map((d,i)=>`<circle cx="${x(i)}" cy="${y(d)}" r="${i===v.length-1?4:2.5}" fill="var(--accent)"><title>${lbl[i]}: ${d} orders</title></circle>`).join("")}
+  <text x="${x(v.length-1)-4}" y="${y(v[v.length-1])-9}" text-anchor="end" style="fill:var(--fg);font-weight:600">${v[v.length-1]} now</text>
+  ${lbl.map((l,i)=>`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${l}</text>`).join("")}</svg></div>
+  <div class="legend"><span style="--c:var(--accent)">Blocked orders per week · this week is live</span></div>`;
+}
+
+/* ---------- PIM ---------- */
+let PF={status:"All",gap:"ALL",q:""};
+V.pim=()=>{
+  setCrumbs("Product information");
+  const list=S.records.filter(r=>(PF.status==="All"||r.status===PF.status)&&(PF.gap==="ALL"||chPct(r,PF.gap)<100)&&(!PF.q||(r.pn+" "+r.name+" "+r.cat).toLowerCase().includes(PF.q.toLowerCase())));
+  $("#view").innerHTML=`<div class="pagehead"><div><h1>Product information</h1></div>
+   <div class="filters"><input class="sel" id="pq" placeholder="Filter records" value="${esc(PF.q)}" aria-label="Filter records">
+    <select class="sel" id="pgap" aria-label="Channel gaps"><option value="ALL">All channels</option>${Object.keys(CH).map(c=>`<option value="${c}" ${PF.gap===c?"selected":""}>Gaps in ${CH[c].label}</option>`).join("")}</select></div></div>
+  <div class="seg">${["All","Draft","Enrichment","In review","Published","Phase-out","Superseded"].map(s=>`<button aria-pressed="${PF.status===s}" data-s="${s}">${s} <span class="mono mut">${s==="All"?S.records.length:S.records.filter(r=>r.status===s).length}</span></button>`).join("")}</div>
+  <div class="card tw"><table><thead><tr><th>Part number</th><th>Description</th><th>Category</th><th>Revision</th><th>Workflow</th><th>Steward</th><th>Readiness: SpareLink · Carrier · Catalog · Toolbox</th><th class="n">Blocking</th><th>SpareLink</th></tr></thead><tbody>
+  ${list.map(r=>{const e=errs(r).length;const w=S.warp[r.pn];return `<tr class="click" tabindex="0" data-pn="${r.pn}"><td class="m">${r.pn}</td><td>${esc(r.name)}</td><td class="mut">${esc(r.cat)}</td><td class="m">${esc(r.rev)}</td><td>${wfPill(r.status)}${r.dirty?' <span class="chip">changes pending</span>':""}</td><td class="m">${esc(r.steward)||'<span class="mut">unassigned</span>'}</td><td><div class="chmini">${Object.keys(CH).map(c=>meter(chPct(r,c))).join("")}</div></td><td class="n ${e?"up":""}">${e}</td><td>${!w?pill("Not in SpareLink","p-mut"):w.sync==="Error"?pill("Sync error","p-bad"):pill("In sync","p-good")}</td></tr>`;}).join("")||`<tr><td colspan="9" class="mut">No records match</td></tr>`}
+  </tbody></table></div>`;
+  $$("[data-s]").forEach(b=>b.onclick=()=>{PF.status=b.dataset.s;V.pim();});
+  $("#pgap").onchange=e=>{PF.gap=e.target.value;V.pim();};
+  $("#pq").oninput=e=>{PF.q=e.target.value;const p=e.target.selectionStart;V.pim();const i=$("#pq");i.focus();i.setSelectionRange(p,p);};
+  $$("tr[data-pn]").forEach(tr=>{tr.onclick=()=>openRec(tr.dataset.pn);tr.onkeydown=e=>{if(e.key==="Enter")openRec(tr.dataset.pn);};});
+};
+function openRec(pn,tab){
+  const r=R(pn);tab=tab||"attrs";const iss=issues(r);const ec=iss.filter(i=>i.sev==="error").length;
+  const locked=r.status==="Superseded";
+  const head=`<div class="row"><div><div class="mut m" style="font-size:12px">Product record${r.eco?" · from "+r.eco:""}</div><h2>${r.pn} · ${esc(r.name)}</h2><div class="meta">${wfPill(r.status)} <span>Steward ${esc(r.steward)||"unassigned"}</span> <span>Completeness ${avgPct(r)}%</span> ${S.warp[r.pn]?`<span class="chip">SpareLink sync ${S.warp[r.pn].lastSync}</span>`:'<span class="chip">Not in SpareLink</span>'}</div></div>
+   <div class="actions">
+    ${!locked&&(r.status==="Draft"||r.status==="Enrichment")?`<button class="btn" id="submit" ${ec?"disabled title='Fix blocking issues first'":""}>Submit for review</button>`:""}
+    ${r.status==="In review"?`<button class="btn ok" id="approve" ${ec?"disabled title='Fix blocking issues first'":""}>Approve &amp; publish to SpareLink</button>`:""}
+    ${(r.status==="Published"||r.status==="Phase-out")&&r.dirty?`<button class="btn ok" id="approve" ${ec?"disabled":""}>Republish to SpareLink</button>`:""}
+    <button class="x" aria-label="Close">×</button></div></div>
+   <div class="tabs">${[["attrs","Attributes"],["assets","Assets"],["channels","Channels"],["issues","Validation",ec],["hist","History"]].map(([k,l,c])=>`<button aria-selected="${k===tab}" data-t="${k}">${l}${c?`<span class="c">${c}</span>`:""}</button>`).join("")}</div>`;
+  let body="";
+  const bad=k=>iss.some(i=>i.sev==="error"&&i.k===k)?"bad":"";
+  const dis=locked?"disabled":"";
+  if(tab==="attrs"){
+    const prev=r.prev&&R(r.prev);
+    body=`${prev&&!locked&&(r.status==="Draft"||r.status==="Enrichment")?`<div class="card"><div class="bd" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="flex:1;min-width:160px">Revision ${esc(prev.rev)} is complete</span><button class="btn" id="copyPrev">Copy from revision ${esc(prev.rev)}</button></div></div>`:""}
+    <form id="rf" class="card" onsubmit="return false"><div class="hd"><h2>Core</h2><span class="chip pim">mastered in Product Information</span></div><div class="bd form">
+      <label for="f-name"><span class="req">Short description</span><input id="f-name" maxlength="40" value="${esc(r.name)}" class="${bad("name")}" ${dis}></label>
+      <label for="f-cat"><span class="req">Product category</span><select id="f-cat" class="${bad("cat")}" ${dis}><option value="">—</option>${Object.keys(CATS).map(c=>`<option ${r.cat===c?"selected":""}>${c}</option>`).join("")}</select></label>
+      <label for="f-rev">Revision<input id="f-rev" value="${esc(r.rev)}" disabled></label>
+      <label for="f-std"><span class="req">Standard price (US dollars)</span><input id="f-std" type="number" min="0" step="0.01" value="${r.std??""}" class="${bad("std")}" ${dis}></label>
+    </div>
+    <div class="hd" style="border-top:1px solid var(--line)"><h2>Logistics &amp; trade</h2><span class="chip">feeds SpareLink, carrier rating, customs</span></div><div class="bd form">
+      <label for="f-weight"><span class="req">Gross weight (pounds)</span><input id="f-weight" type="number" min="0" step="0.1" value="${r.weight??""}" class="${bad("weight")}" ${dis}></label>
+      <label for="f-len"><span class="req">Length (inches)</span><input id="f-len" type="number" min="0" step="0.1" value="${r.len??""}" class="${bad("dims")}" ${dis}></label>
+      <label for="f-wid"><span class="req">Width (inches)</span><input id="f-wid" type="number" min="0" step="0.1" value="${r.wid??""}" class="${bad("dims")}" ${dis}></label>
+      <label for="f-hgt"><span class="req">Height (inches)</span><input id="f-hgt" type="number" min="0" step="0.1" value="${r.hgt??""}" class="${bad("dims")}" ${dis}></label>
+      <label for="f-hazmat"><span class="req">Dangerous goods class</span><select id="f-hazmat" class="${bad("hazmat")}" ${dis}><option value="">— declare —</option>${HAZ.map(h=>`<option ${r.hazmat===h?"selected":""}>${h}</option>`).join("")}</select></label>
+      <label for="f-hts"><span class="req">Harmonized tariff code</span><input id="f-hts" placeholder="0000.00.0000" value="${esc(r.hts)}" class="${bad("hts")}" ${dis}></label>
+      <label for="f-origin"><span class="req">Country of origin</span><input id="f-origin" placeholder="Country" value="${esc(r.origin)}" class="${bad("origin")}" ${dis}></label>
+    </div>
+    <div class="hd" style="border-top:1px solid var(--line)"><h2>Service</h2><span class="chip">feeds technician toolbox</span></div><div class="bd form">
+      <div style="grid-column:1/-1;display:grid;gap:6px"><span style="font-size:11.5px;color:var(--muted);font-weight:500">Vehicle fitment</span><div class="checks">${MODELS.map(m=>`<label><input type="checkbox" class="f-fit" value="${m}" ${r.fitment.includes(m)?"checked":""} ${dis}> ${m}</label>`).join("")}</div></div>
+      <label for="f-laborOp">Labor operation<input id="f-laborOp" value="${esc(r.laborOp)}" ${dis}></label>
+      <label for="f-torque">Torque spec<input id="f-torque" value="${esc(r.torque)}" ${dis}></label>
+    </div>
+    <div class="hd" style="border-top:1px solid var(--line)"><h2>Catalog</h2><span class="chip">feeds service parts catalog</span></div><div class="bd form">
+      <label for="f-catalogTitle" class="wide">Catalog title<input id="f-catalogTitle" value="${esc(r.catalogTitle)}" ${dis}></label>
+      <label for="f-catalogDesc" class="wide">Catalog description<textarea id="f-catalogDesc" ${dis}>${esc(r.catalogDesc)}</textarea></label>
+    </div>
+    ${locked?"":`<div class="bd" style="border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;align-items:center;flex-wrap:wrap"><button class="btn pri" id="saveRec">Save</button></div>`}</form>`;
+  } else if(tab==="assets"){
+    const ls=linked(r);const sug=S.assets.filter(a=>!a.parts.includes(r.pn)&&(a.suggest===r.pn||(r.eco&&a.eco===r.eco)));
+    body=`<div class="card"><div class="hd"><h2>Linked assets</h2><span class="chip dam">from Digital Assets</span></div><div class="bd dz" id="dropLink">${ls.length?`<div class="mini">${ls.map(a=>`<div style="display:grid;gap:4px">${acard(a)}<button class="btn sm" data-unlink="${a.id}">Unlink</button></div>`).join("")}</div>`:'<span class="mut">Drag a suggested asset here</span>'}</div></div>
+     ${sug.length?`<div class="card"><div class="hd"><h2>Suggested from Digital Assets</h2><span class="mut" style="font-size:12px">drag onto Linked</span></div><div class="bd"><div class="mini">${sug.map(a=>`<div style="display:grid;gap:4px;cursor:grab" draggable="true" data-drag="${a.id}">${acard(a)}<button class="btn sm pri" data-link="${a.id}">Link</button></div>`).join("")}</div></div></div>`:""}
+     <div class="card"><div class="hd"><h2>Asset requirements</h2></div><div class="tw"><table><tbody>
+      ${[["hero","Service catalog"],["exploded","Technician toolbox"],["sds","Carrier rating (dangerous goods only)"]].map(([k,c])=>`<tr><td>${FIELDS[k].l}</td><td class="mut">${c}</td><td>${has(r,k)?pill("Met","p-good"):pill("Missing","p-bad")}</td></tr>`).join("")}
+     </tbody></table></div></div>`;
+  } else if(tab==="channels"){
+    body=Object.entries(CH).map(([c,C])=>`<div class="card"><div class="hd"><h2>${C.label}</h2><div style="display:flex;gap:8px;align-items:center">${meter(chPct(r,c),90)}<span class="mono">${chPct(r,c)}%</span></div></div><div class="tw"><table><tbody>
+      ${C.req.map(k=>`<tr><td>${FIELDS[k].l}</td><td>${has(r,k)?pill("Complete","p-good"):pill("Missing","p-bad")}</td></tr>`).join("")}</tbody></table></div></div>`).join("");
+  } else if(tab==="issues"){
+    body=`<div class="card">${iss.length?iss.map(i=>`<div class="issue">${i.sev==="error"?pill("Blocking","p-bad"):pill("Warning","p-warn")}<div>${esc(i.txt)} <span class="mut" style="font-size:12px">${CH[i.ch].label}</span>${i.asset?` <button class="btn sm" data-asset="${i.asset}">Open in Digital Assets</button>`:""}</div></div>`).join(""):`<div class="bd">${pill("All validations pass","p-good")}</div>`}</div>`;
+  } else {
+    body=`<div class="card"><div class="bd"><ul class="timeline">${(r.hist.length?r.hist:[{ts:"03/02/2026",cls:"",txt:"Migrated from legacy item master into Product Information"}]).slice().reverse().map(h=>`<li class="${h.cls}"><span class="ts">${h.ts}</span><span class="dot"></span><span>${esc(h.txt)}</span></li>`).join("")}</ul></div></div>`;
+  }
+  drawer(pn,head,passport(r)+body);
+  layer.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>openRec(pn,b.dataset.t));
+  bindAssets(layer);
+  const cp=$("#copyPrev");if(cp)cp.onclick=()=>{const p=R(r.prev);["weight","len","wid","hgt","hazmat","hts","origin","laborOp","torque","catalogTitle"].forEach(k=>r[k]=p[k]);r.fitment=p.fitment.slice();r.catalogDesc=p.catalogDesc.replace(/\.$/,"")+`. Revision ${r.rev}: revised lip seal material.`;r.std=+(p.std*1.06).toFixed(2);r.steward=r.steward||"Avantika Thakur";if(r.status==="Draft")r.status="Enrichment";r.hist.push({ts:nowTs(),cls:"acc",txt:`Attributes copied from revision ${p.rev}. Price raised 6% for the engineering change.`});save();render();openRec(pn,"attrs");toast(`Copied from ${p.pn}. Review, then save.`);};
+  const sv=$("#saveRec");if(sv)sv.onclick=()=>{
+    const g=id=>$("#f-"+id).value.trim();const n=id=>{const v=g(id);return v===""?null:+v;};
+    Object.assign(r,{name:g("name").toUpperCase(),cat:g("cat"),std:n("std"),weight:n("weight"),len:n("len"),wid:n("wid"),hgt:n("hgt"),hazmat:g("hazmat"),hts:g("hts"),origin:g("origin"),laborOp:g("laborOp"),torque:g("torque"),catalogTitle:g("catalogTitle"),catalogDesc:g("catalogDesc"),fitment:$$(".f-fit").filter(c=>c.checked).map(c=>c.value)});
+    r.steward=r.steward||"Avantika Thakur";
+    if(r.status==="Draft")r.status="Enrichment";
+    if(r.status==="Published"||r.status==="Phase-out")r.dirty=true;
+    r.hist.push({ts:nowTs(),cls:"",txt:"Attributes saved"});save();render();openRec(pn,"attrs");
+    const e=errs(r).length;toast(e?`Saved · ${e} blocking issue${e>1?"s":""} remaining`:"Saved · all SpareLink validations pass");};
+  const sb=$("#submit");if(sb)sb.onclick=()=>{r.status="In review";r.hist.push({ts:nowTs(),cls:"acc",txt:"Submitted for review"});save();render();openRec(pn);toast("Submitted for review");};
+  const ap=$("#approve");if(ap)ap.onclick=()=>{if(errs(r).length){toast("Fix blocking issues before publishing");return;}const was=!!S.warp[pn];publish(r);save();render();openRec(pn,"hist");toast(`${was?"SpareLink material updated":"Material created in SpareLink"} `);};
+  layer.querySelectorAll("[data-link]").forEach(b=>b.onclick=e=>{e.stopPropagation();const a=A(b.dataset.link);a.parts.push(pn);r.hist.push({ts:nowTs(),cls:"",txt:`Linked ${a.id} (${ATYPE[a.type]}) from Digital Assets`});if(r.status==="Published")r.dirty=true;save();render();openRec(pn,"assets");toast(`${a.id} linked`);});
+  const dz=$("#dropLink");if(dz){layer.querySelectorAll("[data-drag]").forEach(el=>el.ondragstart=e=>{e.dataTransfer.setData("text/plain",el.dataset.drag);});
+    dz.ondragover=e=>{e.preventDefault();dz.classList.add("over");};dz.ondragleave=()=>dz.classList.remove("over");
+    dz.ondrop=e=>{e.preventDefault();dz.classList.remove("over");const id=e.dataTransfer.getData("text/plain");const b=layer.querySelector(`[data-link="${id}"]`);if(b)b.click();};}
+  layer.querySelectorAll("[data-unlink]").forEach(b=>b.onclick=e=>{e.stopPropagation();const a=A(b.dataset.unlink);a.parts=a.parts.filter(p=>p!==pn);r.hist.push({ts:nowTs(),cls:"",txt:`Unlinked ${a.id}`});if(r.status==="Published")r.dirty=true;save();render();openRec(pn,"assets");});
+}
+
+/* ---------- DAM ---------- */
+let AF={type:"ALL",status:"ALL",q:""};
+V.dam=()=>{
+  setCrumbs("Digital assets");
+  const list=S.assets.filter(a=>(AF.type==="ALL"||a.type===AF.type)&&(AF.status==="ALL"||(AF.status==="Rights expired"?expired(a):a.status===AF.status&&!expired(a)))&&(!AF.q||(a.id+" "+a.file+" "+a.parts.join(" ")).toLowerCase().includes(AF.q.toLowerCase())));
+  $("#view").innerHTML=`<div class="pagehead"><div><h1>Digital assets</h1></div>
+   <div class="actions"><button class="btn pri" id="up">Upload</button></div></div>
+  <div class="filters"><input class="sel" id="aq" placeholder="Search file, ID or part" value="${esc(AF.q)}" aria-label="Search assets">
+   <select class="sel" id="at" aria-label="Asset type"><option value="ALL">All types</option>${Object.entries(ATYPE).map(([k,l])=>`<option value="${k}" ${AF.type===k?"selected":""}>${l}</option>`).join("")}</select>
+   <div class="seg">${["ALL","Approved","In review","Rights expired"].map(s=>`<button aria-pressed="${AF.status===s}" data-as="${s}">${s==="ALL"?"All":s}</button>`).join("")}</div></div>
+  <div class="drop" id="drop">Drop files to upload</div>
+  <div class="agrid">${list.map(acard).join("")||'<span class="mut">No assets match</span>'}</div>`;
+  $("#aq").oninput=e=>{AF.q=e.target.value;const p=e.target.selectionStart;V.dam();const i=$("#aq");i.focus();i.setSelectionRange(p,p);};
+  $("#at").onchange=e=>{AF.type=e.target.value;V.dam();};
+  $$("[data-as]").forEach(b=>b.onclick=()=>{AF.status=b.dataset.as;V.dam();});
+  bindAssets($("#view"));
+  $("#up").onclick=()=>$("#fileIn").click();
+  const d=$("#drop");d.ondragover=e=>{e.preventDefault();d.classList.add("over");};d.ondragleave=()=>d.classList.remove("over");
+  d.ondrop=e=>{e.preventDefault();d.classList.remove("over");ingest([...e.dataTransfer.files]);};
+};
+$("#fileIn").onchange=e=>{ingest([...e.target.files]);e.target.value="";};
+function ingest(files){
+  if(!files.length)return;let done=0;
+  files.forEach(f=>{
+    const ext=(f.name.split(".").pop()||"").toUpperCase();const isImg=/^(PNG|JPG|JPEG|WEBP|GIF)$/.test(ext);
+    const type=/sds|safety/i.test(f.name)?"sds":/explod/i.test(f.name)?"exploded":/install|guide/i.test(f.name)?"install":isImg?"hero":"spec";
+    const m=f.name.match(/\d{7}-\d{2}-[A-Z]/);
+    const a={id:"ASSET-"+(++S.seq.dam),type,fmt:ext||"FILE",file:f.name,size:(f.size/1048576).toFixed(1)+" MB",ver:1,status:"In review",parts:[],rights:"Owned",by:"Avantika Thakur",created:sapD(TODAY),suggest:m&&R(m[0])?m[0]:""};
+    const fin=()=>{S.assets.push(a);msg("Upload → Digital Assets","Asset upload",a.id,"53",`${f.name} ingested, renditions generated`);if(++done===files.length){save();render();toast(`${files.length} asset${files.length>1?"s":""} uploaded · in review`);}};
+    if(isImg&&f.size<350000){const fr=new FileReader();fr.onload=()=>{a.data=fr.result;fin();};fr.onerror=fin;fr.readAsDataURL(f);}else fin();
+  });
+}
+function openAsset(id){
+  const a=A(id);
+  const head=`<div class="row"><div><div class="mut m" style="font-size:12px">Digital asset</div><h2>${a.id} · ${esc(ATYPE[a.type])}</h2><div class="meta">${aPill(a)} <span class="mono">${esc(a.file)}</span></div></div>
+   <div class="actions">${a.status==="In review"?`<button class="btn ok" id="aApprove">Approve</button>`:""}${expired(a)?`<button class="btn" id="aRenew">Renew rights</button>`:""}<button class="x" aria-label="Close">×</button></div></div>`;
+  const others=S.records.filter(r=>!a.parts.includes(r.pn)&&r.status!=="Superseded");
+  const body=`<div class="g2"><div class="card" style="overflow:hidden">${thumb(a)}</div>
+   <div class="card"><div class="bd" style="display:grid;gap:0">${[["Asset number",a.id],["Type",ATYPE[a.type]],["Format",a.fmt],["File size",a.size],["Version","v"+a.ver],["Usage rights",a.rights],["Source",a.by],["Created",a.created],["Engineering change",a.eco||"—"]].map(([k,v])=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid var(--line)"><span class="mut">${k}</span><span class="mono" style="font-size:12.5px;text-align:right">${esc(v)}</span></div>`).join("")}</div></div></div>
+   <div class="card"><div class="hd"><h2>Linked parts</h2>${others.length?`<div class="filters"><select class="sel" id="aLinkSel" aria-label="Part to link">${others.map(r=>`<option value="${r.pn}" ${a.suggest===r.pn?"selected":""}>${r.pn} · ${esc(r.name)}</option>`).join("")}</select><button class="btn sm" id="aLink">Link to part</button></div>`:""}</div><div class="tw"><table><tbody>
+    ${a.parts.map(p=>`<tr class="click" data-pn="${p}"><td class="m">${p}</td><td>${esc(R(p).name)}</td><td>${S.warp[p]&&S.warp[p].docs.includes(a.id)?pill("In SpareLink","p-good"):pill("Not yet in SpareLink","p-mut")}</td></tr>`).join("")||`<tr><td class="mut">Not linked to any part</td></tr>`}</tbody></table></div></div>
+   <div class="card"><div class="hd"><h2>Renditions</h2></div><div class="tw"><table><thead><tr><th>Rendition</th><th>Consumed by</th><th>Spec</th></tr></thead><tbody>
+    ${(a.type==="hero"?[["Original","Digital Assets archive",a.fmt],["Catalog, 1600 pixels","Service catalog","Web image"],["Thumbnail, 400 pixels","SpareLink material master","Web image"]]:a.type==="exploded"?[["Original","Digital Assets archive",a.fmt],["Toolbox vector","Technician toolbox","Vector with callouts"],["Print","Service manual","Archive PDF"]]:[["Original","Digital Assets archive",a.fmt],["Archive","Compliance","Archive PDF"]]).map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td><td class="m">${x[2]}</td></tr>`).join("")}</tbody></table></div></div>`;
+  drawer(id,head,body);
+  const ap=$("#aApprove");if(ap)ap.onclick=()=>{a.status="Approved";msg("Digital Assets","Asset approval",a.id,"53",`${ATYPE[a.type]} approved for use`);a.parts.forEach(p=>{const r=R(p);if(r.status==="Published")r.dirty=true;});save();render();openAsset(id);toast(`${a.id} approved`);};
+  const rn=$("#aRenew");if(rn)rn.onclick=()=>{a.exp="2027-10-15";a.rights="Licensed · expires 10/15/2027";msg("Digital Assets → Catalog","Usage rights",a.id,"53","Rights renewed, rendition restored to catalog");S.msgs.filter(m=>m.obj===a.id&&m.status==="W").forEach(m=>m.done=true);save();render();openAsset(id);toast("Usage rights renewed to 10/15/2027");};
+  const lk=$("#aLink");if(lk)lk.onclick=()=>{const p=$("#aLinkSel").value;if(!p)return;a.parts.push(p);const r=R(p);r.hist.push({ts:nowTs(),cls:"",txt:`Linked ${a.id} from Digital Assets`});if(r.status==="Published")r.dirty=true;save();render();openAsset(id);toast(`${a.id} linked to ${p}`);};
+  layer.querySelectorAll("tr[data-pn]").forEach(tr=>tr.onclick=()=>openRec(tr.dataset.pn,"assets"));
+}
+
+/* ---------- SpareLink material master ---------- */
+V.materials=()=>{
+  setCrumbs("Material master","SpareLink");
+  const rows=Object.values(S.warp);
+  $("#view").innerHTML=`<div class="pagehead"><div><h1>Material master</h1></div></div>
+  <div class="card tw"><table><thead><tr><th>Material</th><th>Description</th><th>Type</th><th>Category</th><th class="n">Gross weight</th><th>Dangerous goods</th><th>Tariff code</th><th>Follow-up</th><th class="n">Documents</th><th>Last update</th></tr></thead><tbody>
+  ${rows.map(w=>`<tr class="click" tabindex="0" data-m="${w.matnr}"><td class="m">${w.matnr}</td><td>${esc(w.maktx)}</td><td class="m">${w.mtart}</td><td class="m">${w.matkl}</td><td class="n ${w.brgew?"":"up"}">${w.brgew?w.brgew+" pounds":"missing"}</td><td class="m">${w.profl||'<span class="mut">—</span>'}</td><td class="m">${esc(w.stawn)}</td><td class="m">${w.nfmat||'<span class="mut">—</span>'}</td><td class="n">${w.docs.length}</td><td>${w.sync==="Error"?pill("Error","p-bad"):`<span class="m mut">${w.lastSync}</span>`}</td></tr>`).join("")}
+  </tbody></table></div>`;
+  $$("tr[data-m]").forEach(tr=>{tr.onclick=()=>openMat(tr.dataset.m);tr.onkeydown=e=>{if(e.key==="Enter")openMat(tr.dataset.m);};});
+};
+function openMat(mat,tab){
+  const w=S.warp[mat];tab=tab||"basic";
+  const grid=arr=>`<div class="fields">${arr.map(([k,sap,v,src,m])=>`<div class="f"><div class="k">${esc(k)}${src?`<span class="chip ${src==="PIM"?"pim":"dam"}">${src==="PIM"?"from Product Information":"from Digital Assets"}</span>`:""}</div><div class="v ${m?"m":""} ${v===null||v===""?"miss":""}">${v===null||v===""?"Missing":esc(v)}</div></div>`).join("")}</div>`;
+  const head=`<div class="row"><div><div class="mut m" style="font-size:12px">Display material · SpareLink</div><h2>${w.matnr} · ${esc(w.maktx)}</h2><div class="meta">${w.mtart} · Spare part · ${w.sync==="Error"?pill("Last update failed","p-bad"):pill("Up to date","p-good")} <span class="chip">${w.lastSync}</span></div></div>
+   <div class="actions"><button class="btn" id="toPim">Open product record</button><button class="x" aria-label="Close">×</button></div></div>
+   <div class="tabs">${[["basic","Basic data"],["log","Logistics & trade"],["docs","Documents"],["plant","Plant stock"]].map(([k,l])=>`<button aria-selected="${k===tab}" data-t="${k}">${l}</button>`).join("")}</div>`;
+  let body;
+  if(tab==="basic") body=`<div class="card"><div class="bd">${grid([["Material","",w.matnr,"PIM",1],["Description","",w.maktx,"PIM"],["Material type","",w.mtart,""],["Base unit","",w.meins,""],["Material group","",w.matkl,"PIM",1],["Revision level","",w.revlv,"PIM"],["Standard price","",w.stprs!=null?usd(w.stprs):null,"PIM"],["Follow-up material","",w.nfmat,"PIM",1]])}</div></div>`;
+  else if(tab==="log") body=`<div class="card"><div class="bd">${grid([["Gross weight","",w.brgew!=null?w.brgew+" "+w.gewei:null,"PIM"],["Length","",w.laeng!=null?w.laeng+" "+w.meabm:null,"PIM"],["Width","",w.breit!=null?w.breit+" "+w.meabm:null,"PIM"],["Height","",w.hoehe!=null?w.hoehe+" "+w.meabm:null,"PIM"],["Dangerous goods profile","",w.profl||"Not regulated","PIM",1],["Harmonized tariff code","",w.stawn,"PIM",1],["Country of origin","",w.herkl,"PIM",1],["Billable weight","",w.brgew?billable(w).toFixed(1)+" pounds":null,""]])}</div></div>`;
+  else if(tab==="docs") body=`<div class="card"><div class="hd"><h2>Document links</h2><span class="chip dam">linked from Digital Assets</span></div><div class="tw"><table><thead><tr><th>Asset number</th><th>Source</th><th>Description</th><th>Version</th><th>Status</th></tr></thead><tbody>
+    ${w.docs.map(id=>{const a=A(id);return a?`<tr class="click" data-asset="${a.id}"><td class="m">${a.id}</td><td>Digital Assets</td><td>${ATYPE[a.type]} · ${esc(a.file)}</td><td class="m">v${a.ver}</td><td>${aPill(a)}</td></tr>`:"";}).join("")||`<tr><td colspan="5" class="mut">No documents linked</td></tr>`}</tbody></table></div></div>`;
+  else body=`<div class="card tw"><table><thead><tr><th>Distribution center</th><th>Location</th><th class="n">Available</th><th class="n">Value</th></tr></thead><tbody>${Object.entries(PLANTS).map(([k,p])=>{const q=(S.stock[mat]||{})[k]||0;return `<tr><td>${p.name}</td><td>${p.loc}</td><td class="n">${q}</td><td class="n">${w.stprs?usd(q*w.stprs):"—"}</td></tr>`;}).join("")}</tbody></table></div>`;
+  drawer(mat,head,body);
+  layer.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>openMat(mat,b.dataset.t));
+  $("#toPim").onclick=()=>openRec(mat);
+  bindAssets(layer);
+}
+
+/* ---------- Service orders ---------- */
+V.orders=()=>{
+  setCrumbs("Service orders","SpareLink");
+  const rows=S.orders.map(o=>({o,r:routeSO(o)}));
+  $("#view").innerHTML=`<div class="pagehead"><div><h1>Service orders</h1></div></div>
+  <div class="card tw"><table><thead><tr><th>Order</th><th>Service center</th><th>Ordered part</th><th>Appointment</th><th>Ships</th><th>Source</th><th>Mode</th><th class="n">Billable weight</th><th class="n">Landed</th><th>Status</th></tr></thead><tbody>
+  ${rows.map(({o,r})=>{const p=r.pick;return `<tr class="click" tabindex="0" data-id="${o.id}"><td class="m">${o.id}</td><td>${esc(o.sc)}</td><td><div class="m">${o.pn}</div><div class="mut" style="font-size:11.5px">${esc(R(o.pn).name)}</div></td><td>${bizDate(o.appt)}</td><td>${r.block?"—":r.pn!==o.pn?`<span class="m">${r.pn}</span> <span class="chip">follow-up</span>`:'<span class="mut">as ordered</span>'}</td><td>${p?`${PLANTS[p.pl].name} `:"—"}</td><td>${p?`<b style="color:${MODES[p.m].c}">${MODES[p.m].label}</b>`:"—"}</td><td class="n">${r.bw?r.bw.toFixed(1)+" pounds":"—"}</td><td class="n">${p?usd(p.landed):"—"}</td><td>${o.status==="Released"?pill("Released","p-good"):r.block?pill("Blocked by data","p-bad"):!p?pill("At risk","p-warn"):pill("Ready","p-acc")}</td></tr>`;}).join("")}
+  </tbody></table></div>`;
+  $$("tr[data-id]").forEach(tr=>{tr.onclick=()=>openOrder(tr.dataset.id);tr.onkeydown=e=>{if(e.key==="Enter")openOrder(tr.dataset.id);};});
+};
+function openOrder(id){
+  const o=S.orders.find(x=>x.id===id);const r=routeSO(o);const p=r.pick;
+  const head=`<div class="row"><div><div class="mut m" style="font-size:12px">Service order</div><h2>${o.id} · ${esc(R(o.pn).name)}</h2><div class="meta">${esc(o.sc)} · ${o.model} ${o.vin} · Appointment ${bizDate(o.appt)}${o.note?" · "+esc(o.note):""}${o.status==="Released"?" · "+pill("Released","p-good"):""}</div></div>
+   <div class="actions">${o.status!=="Released"&&p?`<button class="btn pri" id="rel">Release</button>`:""}<button class="x" aria-label="Close">×</button></div></div>`;
+  let body;
+  if(r.block) body=`<div class="card" style="background:var(--bad-soft);border-color:transparent"><div class="bd" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:220px"><b>${esc(r.block)}</b></div><button class="btn" id="fix">Open product record</button></div></div>`;
+  else body=`<div class="card"><div class="bd fields">${[["Ships material",r.pn],["Billable weight",r.bw.toFixed(1)+" pounds"],["Dangerous goods restriction",r.air?"None":"Ground only"],["Decision",p?`${PLANTS[p.pl].name} · ${MODES[p.m].label}`:"No option arrives in time"]].map(([k,v])=>`<div class="f"><div class="k">${k}</div><div class="v">${esc(v)}</div></div>`).join("")}</div></div>
+   <div class="card tw"><table><thead><tr><th>Distribution center</th><th>Mode</th><th class="n">Freight</th><th class="n">Landed</th><th>Arrives</th><th></th></tr></thead><tbody>
+   ${r.opts.slice().sort((a,b)=>a.landed-b.landed).map(x=>{const sel=p&&x.pl===p.pl&&x.m===p.m;return `<tr class="${sel?"selrow":(!x.ok||!x.allowed)?"dim":""}"><td>${PLANTS[x.pl].name} </td><td>${MODES[x.m].label}</td><td class="n">${usd(x.fr)}</td><td class="n">${usd(x.landed)}</td><td>${bizDate(x.eta)}</td><td>${sel?pill("Selected","p-acc"):!x.allowed?pill("Dangerous goods: ground only","p-warn"):!x.ok?pill("Late","p-bad"):x.m==="OVERNIGHT"?pill("Fallback","p-mut"):pill("On time","p-good")}</td></tr>`;}).join("")}</tbody></table></div>`;
+  drawer(id,head,body,true);
+  const f=$("#fix");if(f)f.onclick=()=>openRec(r.pn);
+  const rl=$("#rel");if(rl)rl.onclick=()=>{o.status="Released";S.stock[r.pn][p.pl]-=1;save();render();openOrder(id);toast(`${o.id} released from ${PLANTS[p.pl].name} by ${MODES[p.m].label}`);};
+}
+
+/* ---------- Integration hub ---------- */
+let HF="All";
+V.hub=()=>{
+  setCrumbs("Integration hub");
+  const by=i=>S.msgs.filter(m=>m.iface===i);
+  const cnt=i=>{const l=by(i);const e=l.filter(m=>m.status==="51"&&!m.done).length;return `${l.length} message${l.length===1?"":"s"}${e?` · ${e} error${e>1?"s":""}`:""}`;};
+  const list=S.msgs.slice().reverse().filter(m=>HF==="All"||(HF==="Errors"?m.status==="51"&&!m.done:HF==="Warnings"?m.status==="W"&&!m.done:HF.startsWith("node:")?m.iface.includes(HF.slice(5)):m.iface===HF));
+  const NK={"Engineering":"Engineering","Product Information":"Product Information","Digital Assets":"Digital Assets","SpareLink":"SpareLink","Carrier rating":"Carrier","Service catalog":"Catalog","Technician toolbox":"Toolbox","Service orders":"Orders"};
+  const box=(x,y,w,h,t,s,c)=>{const k=NK[t];const on=HF==="node:"+k;const er=S.msgs.some(m=>m.status==="51"&&!m.done&&m.iface.includes(k));return `<g class="node" data-node="${k}" tabindex="0" role="button" aria-label="Show messages for ${t}"><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="${on?"var(--accent-soft)":"var(--surface)"}" stroke="${on?"var(--accent)":c||"var(--line2)"}" stroke-width="${on||c?2:1}"/><text x="${x+w/2}" y="${y+h/2-2}" text-anchor="middle" font-weight="600">${t}</text><text class="sm" x="${x+w/2}" y="${y+h/2+14}" text-anchor="middle">${s}</text>${er?`<circle cx="${x+w-9}" cy="${y+9}" r="5" fill="var(--bad)"/>`:""}</g>`;};
+  const ar=(x1,y1,x2,y2,l,lx,ly)=>`<g><line class="flow" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="var(--muted)" stroke-width="1.4" marker-end="url(#ah)"/>${l?`<text class="sm" x="${lx??(x1+x2)/2}" y="${ly??(y1+y2)/2-6}" text-anchor="middle">${l}</text>`:""}</g>`;
+  $("#view").innerHTML=`<div class="pagehead"><div><h1>Integration hub</h1></div></div>
+  <div class="card"><div class="hd"><h2>Architecture</h2><span class="chip">click a system</span></div><div class="bd tw">
+   <svg class="arch" viewBox="0 0 900 290" width="100%" style="min-width:680px" role="img" aria-label="Engineering feeds Product Information and Digital Assets. Both feed SpareLink. SpareLink feeds carrier rating, service catalog, technician toolbox and service orders.">
+    <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--muted)"/></marker></defs>
+    ${box(14,110,140,58,"Engineering","part changes")}
+    ${box(240,24,180,58,"Product Information","attributes · approvals","var(--info)")}
+    ${box(240,196,180,58,"Digital Assets","photos · documents","var(--warn)")}
+    ${box(500,110,160,60,"SpareLink","material master","var(--accent)")}
+    ${box(745,14,145,50,"Carrier rating","weight · hazards")}
+    ${box(745,84,145,50,"Service catalog","titles · images")}
+    ${box(745,154,145,50,"Technician toolbox","diagrams · torque")}
+    ${box(745,224,145,50,"Service orders","sourcing · freight")}
+    ${ar(154,128,248,62,cnt("Engineering → Product Information"),190,80)}${ar(154,150,248,216,cnt("Engineering → Digital Assets"),190,206)}
+    ${ar(330,194,330,84,"asset links",372,142)}
+    ${ar(410,58,498,124,cnt("Product Information → SpareLink"),470,78)}${ar(410,220,498,158,cnt("Digital Assets → SpareLink"),470,212)}
+    ${ar(660,122,743,40,cnt("SpareLink → Carrier"),700,70)}${ar(660,134,743,109,"")}${ar(660,146,743,179,"")}${ar(660,158,743,249,"")}
+   </svg></div></div>
+  <div class="card"><div class="hd"><h2>Message monitor${HF.startsWith("node:")?` · <span class="chip">${HF.slice(5)}</span>`:""}</h2><div class="seg">${["All","Errors","Warnings","Product Information → SpareLink","Digital Assets → SpareLink"].map(s=>`<button aria-pressed="${HF===s}" data-h="${s}">${s}</button>`).join("")}</div></div><div class="tw"><table><thead><tr><th>Message number</th><th>Time</th><th>Interface</th><th>Type</th><th>Object</th><th>Status</th><th>Text</th><th></th></tr></thead><tbody>
+   ${list.map(m=>`<tr class="${m.done?"dim":""}"><td class="m">${m.id}</td><td class="m">${m.ts}</td><td>${m.iface}</td><td class="m">${m.type}</td><td class="m"><a href="#" data-obj="${esc(m.obj)}">${esc(m.obj)}</a></td><td>${m.done?pill("Resolved","p-mut"):msgPill(m.status)}</td><td class="wrap">${esc(m.text)}</td><td>${m.status==="51"&&!m.done?`<button class="btn sm" data-rp="${m.id}">Reprocess</button>`:""}</td></tr>`).join("")||`<tr><td colspan="8" class="mut">No messages</td></tr>`}
+  </tbody></table></div></div>
+  <div class="card"><div class="hd"><h2>Field mapping · Product Information → SpareLink</h2></div><div class="tw"><table><thead><tr><th>Product information attribute</th><th>SpareLink material master field</th><th>Rule</th></tr></thead><tbody>
+   ${[["Part number","Material number","From the engineering part number"],["Short description","Material description","Uppercase, up to 40 characters"],["Product category","Material group","Same category name"],["Revision","Revision level","From the engineering revision"],["Gross weight","Gross weight in pounds","Required for every spare part"],["Dimensions","Length, width and height in inches","Required. Drives billable weight"],["Dangerous goods class","Dangerous goods profile","Turns off air shipping"],["Harmonized tariff code","Commodity code for customs","10 digits, format checked"],["Country of origin","Country of origin","Full country name"],["Standard price","Standard price in US dollars","Used for valuation and landed cost"],["Previous revision","Follow-up material on the old part","Set when the new revision is published"],["Fitment, labor operation, torque","Service classification","Used by technicians and the catalog"],["Approved assets","Document links","Only approved assets with valid usage rights"]].map(x=>`<tr><td>${x[0]}</td><td>${x[1]}</td><td class="mut">${x[2]}</td></tr>`).join("")}
+  </tbody></table></div></div>`;
+  $$("[data-h]").forEach(b=>b.onclick=()=>{HF=b.dataset.h;V.hub();});
+  $$("[data-node]").forEach(g=>{const go=()=>{const k=g.dataset.node;if(k==="Orders"){location.hash="#orders";return;}if(k==="Product Information"&&HF==="node:Product Information"){location.hash="#pim";return;}if(k==="Digital Assets"&&HF==="node:Digital Assets"){location.hash="#dam";return;}if(k==="SpareLink"&&HF==="node:SpareLink"){location.hash="#materials";return;}HF=HF==="node:"+k?"All":"node:"+k;V.hub();};g.onclick=go;g.onkeydown=e=>{if(e.key==="Enter")go();};});
+  $$("[data-obj]").forEach(a=>a.onclick=e=>{e.preventDefault();openObj(a.dataset.obj);});
+  $$("[data-rp]").forEach(b=>b.onclick=()=>{const m=S.msgs.find(x=>x.id===b.dataset.rp);const r=R(m.obj);
+    if(r&&errs(r).length===0){m.done=true;publish(r);save();render();toast(`Reprocessed · ${m.obj} posted to SpareLink`);}
+    else{m.done=true;msg(m.iface,m.type,m.obj,"51",r?errs(r)[0].txt:"Object not found");save();render();toast("Reprocess failed · fix the data in Product Information first");}});
+};
+function openObj(o){if(R(o)){openRec(o);return;}if(A(o)){openAsset(o);return;}if(S.ecos.some(x=>x.id===o))location.hash="#changes";}
+
+/* ---------- Engineering changes ---------- */
+function ecoSteps(e){
+  const r=R(e.newPn);const assets=S.assets.filter(a=>a.eco===e.id);
+  const steps=[
+   ["Released by engineering",e.plm==="Released",e.plmDate||e.plm],
+   ["Product record created",!!r,r?"automatic":""],
+   ["Attributes enriched",!!r&&chPct(r,"warp")===100,r?chPct(r,"warp")+"% of SpareLink fields":""],
+   ["Assets approved",!!r&&has(r,"hero")&&has(r,"exploded"),assets.length?assets.filter(a=>a.status==="Approved").length+" of "+assets.length+" approved":""],
+   ["Reviewed",!!r&&["In review","Published","Phase-out"].includes(r.status),r?r.status:""],
+   ["Material in SpareLink",!!(r&&S.warp[r.pn]),r&&S.warp[r.pn]?"posted":""],
+   ["Orderable in catalog",!!(r&&S.warp[r.pn])&&chPct(r,"catalog")===100,""]];
+  return {steps,cur:steps.findIndex(s=>!s[1])};
+}
+V.changes=()=>{
+  setCrumbs("Engineering changes");
+  $("#view").innerHTML=`<div class="pagehead"><div><h1>Change orders</h1></div></div>
+  ${S.ecos.map(e=>{const {steps,cur}=ecoSteps(e);return `<div class="card"><div class="hd"><h2><span class="m">${e.id}</span> · ${esc(e.title)}</h2><div class="actions"><span class="m mut">${e.oldPn} → ${e.newPn} · ${e.type==="FULL"?"two-way":"one-way"}</span>${R(e.newPn)?`<button class="btn sm" data-rec="${e.newPn}">Open product record</button>`:""}</div></div>
+   <div class="bd"><div class="pipe">${steps.map((s,i)=>`<div class="st ${s[1]?"done":i===cur?"now":""}"><b>${s[0]}</b>${s[2]?esc(s[2]):s[1]?"done":i===cur?"waiting":"—"}</div>`).join("")}</div></div></div>`;}).join("")}`;
+  $$("[data-rec]").forEach(b=>b.onclick=()=>openRec(b.dataset.rec));
+};
+
+/* ============ interview mode ============ */
+const EP="1475027-00-E";
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+let busy=false;
+async function runFill(){
+  const r=R(EP);if(busy)return;busy=true;
+  if(r.status==="Draft"||r.status==="Enrichment"){const p=R(r.prev);
+    ["weight","len","wid","hgt","hazmat","hts","origin","laborOp","torque","catalogTitle"].forEach(k=>r[k]=p[k]);r.fitment=p.fitment.slice();r.catalogDesc=p.catalogDesc.replace(/\.$/,"")+`. Revision ${r.rev}: revised lip seal material.`;r.std=+(p.std*1.06).toFixed(2);r.steward="Avantika Thakur";r.status="Enrichment";
+    r.hist.push({ts:nowTs(),cls:"acc",txt:`Attributes copied from revision ${p.rev}`});save();render();openRec(EP);toast("Data filled from revision D");await wait(1100);}
+  const sug=S.assets.filter(a=>a.eco===r.eco&&!a.parts.includes(EP));
+  if(sug.length){sug.forEach(a=>{a.parts.push(EP);r.hist.push({ts:nowTs(),cls:"",txt:`Linked ${a.id} from Digital Assets`});});save();render();openRec(EP);toast(`${sug.length} photos linked from Digital Assets`);await wait(1100);}
+  const rev=S.assets.filter(a=>a.parts.includes(EP)&&a.status==="In review");
+  if(rev.length){rev.forEach(a=>{a.status="Approved";msg("Digital Assets","Asset approval",a.id,"53",`${ATYPE[a.type]} approved`);});save();render();openRec(EP);toast("Photos approved in Digital Assets");await wait(1100);}
+  if(r.status==="Enrichment"&&!errs(r).length){r.status="In review";r.hist.push({ts:nowTs(),cls:"acc",txt:"Submitted for review"});save();render();openRec(EP);toast("Submitted for review");}
+  busy=false;showStep(T);
+}
+async function runPublish(){
+  const r=R(EP);if(busy)return;
+  if(r.status!=="In review"){if(!S.warp[EP]){toast("Run step 2 first");return;}toast("Already published");return;}
+  busy=true;publish(r);save();render();openRec(EP);toast("Passport issued · material created in SpareLink");
+  await wait(2600);busy=false;closeLayer();location.hash="#orders";showStep(T);
+}
+const TOUR=[
+ {t:"Every part needs a passport",d:"Before a part can be ordered, shipped, sold or installed, it needs complete data and approved photos. SpareLink issues that passport.",act:"Start",run:()=>{S=SEED();save();Object.keys(seenStamps).forEach(k=>delete seenStamps[k]);closeLayer();location.hash="#readiness";render();setTimeout(()=>showStep(1,true),60);}},
+ {t:"1 · This traveler is stuck",d:"A new seal kit revision has no weight, hazmat class or photos. Two service orders can't ship.",go:()=>{location.hash="#orders";setTimeout(()=>openOrder("ORDER-880403"),160);}},
+ {t:"2 · Issue its passport",d:"Fill the data from the previous revision, attach approved photos from Digital Assets, send for review. Watch the stamps.",go:()=>{location.hash="#pim";setTimeout(()=>openRec(EP),160);},act:"Fill it in",run:runFill},
+ {t:"3 · Now it travels",d:"Approve and publish. The part enters SpareLink and the blocked orders route themselves.",go:()=>{location.hash="#pim";setTimeout(()=>openRec(EP),160);},act:"Approve & publish",run:runPublish},
+ {t:"The result",d:"8 required fields · 4 channels · blocked orders down from about 40 a week to under 10.",go:()=>{location.hash="#readiness";}}
+];
+let T=-1;
+function showStep(i,nav){
+  T=i;const el=$("#tour");if(i<0){el.hidden=true;return;}const st=TOUR[i];el.hidden=false;
+  const r=R(EP);const done=(i===2&&(r.status==="In review"||r.status==="Published"))||(i===3&&r.status==="Published");
+  el.innerHTML=`<div class="tt"><span>INTERVIEW MODE · ${i+1}/${TOUR.length}</span><button id="tX" aria-label="Exit interview mode">×</button></div><b>${esc(st.t)}</b><p>${esc(st.d)}</p>
+   <div class="row"><div class="tdots">${TOUR.map((_,k)=>`<i class="${k<=i?"on":""}"></i>`).join("")}</div><div class="actions">
+   ${i>0?`<button class="btn sm" id="tB">Back</button>`:""}${st.act&&!done?`<button class="btn sm brand" id="tA">${st.act}</button>`:""}${i<TOUR.length-1&&i>0?`<button class="btn sm pri" id="tN">Next</button>`:""}${i===TOUR.length-1?`<button class="btn sm pri" id="tD">Done</button>`:""}</div></div>`;
+  $("#tX").onclick=()=>showStep(-1);
+  const b=$("#tB");if(b)b.onclick=()=>showStep(i-1,true);
+  const n=$("#tN");if(n)n.onclick=()=>showStep(i+1,true);
+  const d=$("#tD");if(d)d.onclick=()=>showStep(-1);
+  const a=$("#tA");if(a)a.onclick=()=>st.run();
+  if(nav&&st.go)st.go();
+}
+$("#tourBtn").onclick=()=>showStep(T>=0?-1:0);
+
+/* ============ router ============ */
+const ROUTES=["readiness","pim","dam","materials","orders","hub","changes"];
+function render(){
+  const h=(location.hash||"#readiness").slice(1);const v=ROUTES.includes(h)?h:"readiness";
+  $$(".navgrp a").forEach(a=>{if(a.getAttribute("href")==="#"+v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
+  counts();V[v]();
+}
+window.addEventListener("hashchange",()=>{closeLayer();render();});
+$("#cmd").addEventListener("keydown",e=>{
+  if(e.key!=="Enter")return;const q=e.target.value.trim();if(!q)return;e.target.value="";const ql=q.toLowerCase();
+  const r=S.records.find(x=>x.pn.toLowerCase().includes(ql)||x.name.toLowerCase().includes(ql));if(r){openRec(r.pn);return;}
+  const a=S.assets.find(x=>x.id.toLowerCase().includes(ql)||x.file.toLowerCase().includes(ql));if(a){openAsset(a.id);return;}
+  const o=S.orders.find(x=>x.id.toLowerCase().includes(ql));if(o){openOrder(o.id);return;}
+  if(S.ecos.some(x=>x.id.toLowerCase().includes(ql))){location.hash="#changes";return;}
+  toast(`Nothing matches "${q}"`);
+});
+$("#avatar").onclick=e=>{e.stopPropagation();const ex=$(".menu");if(ex){ex.remove();return;}
+  const m=document.createElement("div");m.className="menu";m.innerHTML=`<div class="who"><b>SpareLink</b><div class="mut">Product data owner</div></div><button id="mreset">Reset demo data</button>`;
+  document.body.appendChild(m);$("#mreset").onclick=()=>{S=SEED();save();m.remove();closeLayer();render();toast("Demo data reset");};
+  setTimeout(()=>document.addEventListener("click",function f(ev){if(!m.contains(ev.target)){m.remove();document.removeEventListener("click",f);}}),0);};
+render();
+})();
+</script>
+</body>
+</html>
